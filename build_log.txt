@@ -1,0 +1,386 @@
+Running Gradle task 'assembleRelease'...                        
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Could not resolve all artifacts for configuration 'classpath'.
+> Could not download builder-9.0.1.jar (com.android.tools.build:builder:9.0.1)
+   > Could not get resource 'https://dl.google.com/dl/android/maven2/com/android/tools/build/builder/9.0.1/builder-9.0.1.jar'.
+      > Could not GET 'https://dl.google.com/dl/android/maven2/com/android/tools/build/builder/9.0.1/builder-9.0.1.jar'.
+         > dl.google.com
+> Could not download kotlin-gradle-plugin-2.3.20-gradle813.jar (org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin/2.3.20/kotlin-gradle-plugin-2.3.20-gradle813.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin/2.3.20/kotlin-gradle-plugin-2.3.20-gradle813.jar'.
+         > No such host is known (repo.maven.apache.org)
+> Could not download bundletool-1.18.3.jar (com.android.tools.build:bundletool:1.18.3)
+   > Could not get resource 'https://dl.google.com/dl/android/maven2/com/android/tools/build/bundletool/1.18.3/bundletool-1.18.3.jar'.
+      > Could not GET 'https://dl.google.com/dl/android/maven2/com/android/tools/build/bundletool/1.18.3/bundletool-1.18.3.jar'.
+         > No such host is known (dl.google.com)
+> Could not download commons-compress-1.27.1.jar (org.apache.commons:commons-compress:1.27.1)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/apache/commons/commons-compress/1.27.1/commons-compress-1.27.1.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/apache/commons/commons-compress/1.27.1/commons-compress-1.27.1.jar'.
+         > repo.maven.apache.org
+> Could not download jaxb-runtime-2.3.2.jar (org.glassfish.jaxb:jaxb-runtime:2.3.2)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/glassfish/jaxb/jaxb-runtime/2.3.2/jaxb-runtime-2.3.2.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/glassfish/jaxb/jaxb-runtime/2.3.2/jaxb-runtime-2.3.2.jar'.
+         > repo.maven.apache.org
+> Could not download protobuf-java-3.25.5.jar (com.google.protobuf:protobuf-java:3.25.5)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/protobuf/protobuf-java/3.25.5/protobuf-java-3.25.5.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/protobuf/protobuf-java/3.25.5/protobuf-java-3.25.5.jar'.
+         > repo.maven.apache.org
+> Could not download kotlin-gradle-plugin-idea-proto-2.3.20.jar (org.jetbrains.kotlin:kotlin-gradle-plugin-idea-proto:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin-idea-proto/2.3.20/kotlin-gradle-plugin-idea-proto-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin-idea-proto/2.3.20/kotlin-gradle-plugin-idea-proto-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download kotlin-gradle-plugin-idea-2.3.20.jar (org.jetbrains.kotlin:kotlin-gradle-plugin-idea:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin-idea/2.3.20/kotlin-gradle-plugin-idea-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin-idea/2.3.20/kotlin-gradle-plugin-idea-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download jimfs-1.1.jar (com.google.jimfs:jimfs:1.1)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/jimfs/jimfs/1.1/jimfs-1.1.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/jimfs/jimfs/1.1/jimfs-1.1.jar'.
+         > repo.maven.apache.org
+> Could not download guava-33.3.1-jre.jar (com.google.guava:guava:33.3.1-jre)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/guava/guava/33.3.1-jre/guava-33.3.1-jre.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/guava/guava/33.3.1-jre/guava-33.3.1-jre.jar'.
+         > repo.maven.apache.org
+> Could not download bcprov-jdk18on-1.79.jar (org.bouncycastle:bcprov-jdk18on:1.79)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/1.79/bcprov-jdk18on-1.79.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/1.79/bcprov-jdk18on-1.79.jar'.
+         > repo.maven.apache.org
+> Could not download httpclient-4.5.14.jar (org.apache.httpcomponents:httpclient:4.5.14)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/apache/httpcomponents/httpclient/4.5.14/httpclient-4.5.14.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/apache/httpcomponents/httpclient/4.5.14/httpclient-4.5.14.jar'.
+         > repo.maven.apache.org
+> Could not download httpcore-4.4.16.jar (org.apache.httpcomponents:httpcore:4.4.16)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/apache/httpcomponents/httpcore/4.4.16/httpcore-4.4.16.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/apache/httpcomponents/httpcore/4.4.16/httpcore-4.4.16.jar'.
+         > repo.maven.apache.org
+> Could not download jna-platform-5.6.0.jar (net.java.dev.jna:jna-platform:5.6.0)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/net/java/dev/jna/jna-platform/5.6.0/jna-platform-5.6.0.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/net/java/dev/jna/jna-platform/5.6.0/jna-platform-5.6.0.jar'.
+         > repo.maven.apache.org
+> Could not download juniversalchardet-1.0.3.jar (com.googlecode.juniversalchardet:juniversalchardet:1.0.3)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/googlecode/juniversalchardet/juniversalchardet/1.0.3/juniversalchardet-1.0.3.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/googlecode/juniversalchardet/juniversalchardet/1.0.3/juniversalchardet-1.0.3.jar'.
+         > repo.maven.apache.org
+> Could not download stax-ex-1.8.1.jar (org.jvnet.staxex:stax-ex:1.8.1)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jvnet/staxex/stax-ex/1.8.1/stax-ex-1.8.1.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jvnet/staxex/stax-ex/1.8.1/stax-ex-1.8.1.jar'.
+         > repo.maven.apache.org
+> Could not download jakarta.xml.bind-api-2.3.2.jar (jakarta.xml.bind:jakarta.xml.bind-api:2.3.2)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/jakarta/xml/bind/jakarta.xml.bind-api/2.3.2/jakarta.xml.bind-api-2.3.2.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/jakarta/xml/bind/jakarta.xml.bind-api/2.3.2/jakarta.xml.bind-api-2.3.2.jar'.
+         > repo.maven.apache.org
+> Could not download txw2-2.3.2.jar (org.glassfish.jaxb:txw2:2.3.2)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/glassfish/jaxb/txw2/2.3.2/txw2-2.3.2.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/glassfish/jaxb/txw2/2.3.2/txw2-2.3.2.jar'.
+         > repo.maven.apache.org
+> Could not download istack-commons-runtime-3.0.8.jar (com.sun.istack:istack-commons-runtime:3.0.8)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/sun/istack/istack-commons-runtime/3.0.8/istack-commons-runtime-3.0.8.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/sun/istack/istack-commons-runtime/3.0.8/istack-commons-runtime-3.0.8.jar'.
+         > repo.maven.apache.org
+> Could not download FastInfoset-1.2.16.jar (com.sun.xml.fastinfoset:FastInfoset:1.2.16)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/sun/xml/fastinfoset/FastInfoset/1.2.16/FastInfoset-1.2.16.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/sun/xml/fastinfoset/FastInfoset/1.2.16/FastInfoset-1.2.16.jar'.
+         > repo.maven.apache.org
+> Could not download jakarta.activation-api-1.2.1.jar (jakarta.activation:jakarta.activation-api:1.2.1)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/jakarta/activation/jakarta.activation-api/1.2.1/jakarta.activation-api-1.2.1.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/jakarta/activation/jakarta.activation-api/1.2.1/jakarta.activation-api-1.2.1.jar'.
+         > repo.maven.apache.org
+> Could not download auto-value-annotations-1.6.2.jar (com.google.auto.value:auto-value-annotations:1.6.2)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/auto/value/auto-value-annotations/1.6.2/auto-value-annotations-1.6.2.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/auto/value/auto-value-annotations/1.6.2/auto-value-annotations-1.6.2.jar'.
+         > repo.maven.apache.org
+> Could not download error_prone_annotations-2.28.0.jar (com.google.errorprone:error_prone_annotations:2.28.0)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0.jar'.
+         > repo.maven.apache.org
+> Could not download jose4j-0.9.5.jar (org.bitbucket.b_c:jose4j:0.9.5)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/bitbucket/b_c/jose4j/0.9.5/jose4j-0.9.5.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/bitbucket/b_c/jose4j/0.9.5/jose4j-0.9.5.jar'.
+         > repo.maven.apache.org
+> Could not download slf4j-api-1.7.30.jar (org.slf4j:slf4j-api:1.7.30)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.7.30/slf4j-api-1.7.30.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.7.30/slf4j-api-1.7.30.jar'.
+         > repo.maven.apache.org
+> Could not download jdom2-2.0.6.jar (org.jdom:jdom2:2.0.6)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jdom/jdom2/2.0.6/jdom2-2.0.6.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jdom/jdom2/2.0.6/jdom2-2.0.6.jar'.
+         > repo.maven.apache.org
+> Could not download jsr305-3.0.2.jar (com.google.code.findbugs:jsr305:3.0.2)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar'.
+         > repo.maven.apache.org
+> Could not download j2objc-annotations-3.0.0.jar (com.google.j2objc:j2objc-annotations:3.0.0)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/3.0.0/j2objc-annotations-3.0.0.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/3.0.0/j2objc-annotations-3.0.0.jar'.
+         > repo.maven.apache.org
+> Could not download checker-qual-3.43.0.jar (org.checkerframework:checker-qual:3.43.0)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.jar'.
+         > repo.maven.apache.org
+> Could not download flatbuffers-java-1.12.0.jar (com.google.flatbuffers:flatbuffers-java:1.12.0)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/flatbuffers/flatbuffers-java/1.12.0/flatbuffers-java-1.12.0.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/flatbuffers/flatbuffers-java/1.12.0/flatbuffers-java-1.12.0.jar'.
+         > repo.maven.apache.org
+> Could not download apksig-9.0.1.jar (com.android.tools.build:apksig:9.0.1)
+   > Could not get resource 'https://dl.google.com/dl/android/maven2/com/android/tools/build/apksig/9.0.1/apksig-9.0.1.jar'.
+      > Could not GET 'https://dl.google.com/dl/android/maven2/com/android/tools/build/apksig/9.0.1/apksig-9.0.1.jar'.
+         > dl.google.com
+> Could not download kotlin-gradle-plugin-annotations-2.3.20.jar (org.jetbrains.kotlin:kotlin-gradle-plugin-annotations:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin-annotations/2.3.20/kotlin-gradle-plugin-annotations-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin-annotations/2.3.20/kotlin-gradle-plugin-annotations-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download kotlin-native-utils-2.3.20.jar (org.jetbrains.kotlin:kotlin-native-utils:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-native-utils/2.3.20/kotlin-native-utils-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-native-utils/2.3.20/kotlin-native-utils-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download kotlin-tooling-core-2.3.20.jar (org.jetbrains.kotlin:kotlin-tooling-core:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-tooling-core/2.3.20/kotlin-tooling-core-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-tooling-core/2.3.20/kotlin-tooling-core-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download kotlin-build-tools-api-2.3.20.jar (org.jetbrains.kotlin:kotlin-build-tools-api:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.3.20/kotlin-build-tools-api-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.3.20/kotlin-build-tools-api-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download kotlin-util-klib-2.3.20.jar (org.jetbrains.kotlin:kotlin-util-klib:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-util-klib/2.3.20/kotlin-util-klib-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-util-klib/2.3.20/kotlin-util-klib-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download kotlin-util-io-2.3.20.jar (org.jetbrains.kotlin:kotlin-util-io:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-util-io/2.3.20/kotlin-util-io-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-util-io/2.3.20/kotlin-util-io-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download kotlin-daemon-client-2.3.20.jar (org.jetbrains.kotlin:kotlin-daemon-client:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.3.20/kotlin-daemon-client-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.3.20/kotlin-daemon-client-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download failureaccess-1.0.2.jar (com.google.guava:failureaccess:1.0.2)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.jar'.
+         > repo.maven.apache.org
+> Could not download listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar (com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar'.
+         > repo.maven.apache.org
+> Could not download commons-codec-1.17.1.jar (commons-codec:commons-codec:1.17.1)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.17.1/commons-codec-1.17.1.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.17.1/commons-codec-1.17.1.jar'.
+         > repo.maven.apache.org
+> Could not download commons-lang3-3.16.0.jar (org.apache.commons:commons-lang3:3.16.0)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.16.0/commons-lang3-3.16.0.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.16.0/commons-lang3-3.16.0.jar'.
+         > repo.maven.apache.org
+> Could not download commons-logging-1.2.jar (commons-logging:commons-logging:1.2)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/commons-logging/commons-logging/1.2/commons-logging-1.2.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/commons-logging/commons-logging/1.2/commons-logging-1.2.jar'.
+         > repo.maven.apache.org
+> Could not download jna-5.6.0.jar (net.java.dev.jna:jna:5.6.0)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/net/java/dev/jna/jna/5.6.0/jna-5.6.0.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/net/java/dev/jna/jna/5.6.0/jna-5.6.0.jar'.
+         > repo.maven.apache.org
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 27s
+Running Gradle task 'assembleRelease'...                           28.7s
+[!] Gradle threw an error while downloading artifacts from the network.
+Retrying Gradle Build: #1, wait time: 100ms
+Running Gradle task 'assembleRelease'...                        
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Could not resolve all artifacts for configuration 'classpath'.
+> Could not download builder-9.0.1.jar (com.android.tools.build:builder:9.0.1)
+   > Could not get resource 'https://dl.google.com/dl/android/maven2/com/android/tools/build/builder/9.0.1/builder-9.0.1.jar'.
+      > Could not GET 'https://dl.google.com/dl/android/maven2/com/android/tools/build/builder/9.0.1/builder-9.0.1.jar'.
+         > dl.google.com
+> Could not download kotlin-gradle-plugin-2.3.20-gradle813.jar (org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin/2.3.20/kotlin-gradle-plugin-2.3.20-gradle813.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin/2.3.20/kotlin-gradle-plugin-2.3.20-gradle813.jar'.
+         > repo.maven.apache.org
+> Could not download bundletool-1.18.3.jar (com.android.tools.build:bundletool:1.18.3)
+   > Could not get resource 'https://dl.google.com/dl/android/maven2/com/android/tools/build/bundletool/1.18.3/bundletool-1.18.3.jar'.
+      > Could not GET 'https://dl.google.com/dl/android/maven2/com/android/tools/build/bundletool/1.18.3/bundletool-1.18.3.jar'.
+         > dl.google.com
+> Could not download commons-compress-1.27.1.jar (org.apache.commons:commons-compress:1.27.1)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/apache/commons/commons-compress/1.27.1/commons-compress-1.27.1.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/apache/commons/commons-compress/1.27.1/commons-compress-1.27.1.jar'.
+         > repo.maven.apache.org
+> Could not download jaxb-runtime-2.3.2.jar (org.glassfish.jaxb:jaxb-runtime:2.3.2)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/glassfish/jaxb/jaxb-runtime/2.3.2/jaxb-runtime-2.3.2.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/glassfish/jaxb/jaxb-runtime/2.3.2/jaxb-runtime-2.3.2.jar'.
+         > repo.maven.apache.org
+> Could not download protobuf-java-3.25.5.jar (com.google.protobuf:protobuf-java:3.25.5)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/protobuf/protobuf-java/3.25.5/protobuf-java-3.25.5.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/protobuf/protobuf-java/3.25.5/protobuf-java-3.25.5.jar'.
+         > repo.maven.apache.org
+> Could not download kotlin-gradle-plugin-idea-proto-2.3.20.jar (org.jetbrains.kotlin:kotlin-gradle-plugin-idea-proto:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin-idea-proto/2.3.20/kotlin-gradle-plugin-idea-proto-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin-idea-proto/2.3.20/kotlin-gradle-plugin-idea-proto-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download kotlin-gradle-plugin-idea-2.3.20.jar (org.jetbrains.kotlin:kotlin-gradle-plugin-idea:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin-idea/2.3.20/kotlin-gradle-plugin-idea-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin-idea/2.3.20/kotlin-gradle-plugin-idea-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download jimfs-1.1.jar (com.google.jimfs:jimfs:1.1)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/jimfs/jimfs/1.1/jimfs-1.1.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/jimfs/jimfs/1.1/jimfs-1.1.jar'.
+         > repo.maven.apache.org
+> Could not download guava-33.3.1-jre.jar (com.google.guava:guava:33.3.1-jre)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/guava/guava/33.3.1-jre/guava-33.3.1-jre.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/guava/guava/33.3.1-jre/guava-33.3.1-jre.jar'.
+         > repo.maven.apache.org
+> Could not download bcprov-jdk18on-1.79.jar (org.bouncycastle:bcprov-jdk18on:1.79)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/1.79/bcprov-jdk18on-1.79.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/1.79/bcprov-jdk18on-1.79.jar'.
+         > repo.maven.apache.org
+> Could not download httpclient-4.5.14.jar (org.apache.httpcomponents:httpclient:4.5.14)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/apache/httpcomponents/httpclient/4.5.14/httpclient-4.5.14.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/apache/httpcomponents/httpclient/4.5.14/httpclient-4.5.14.jar'.
+         > repo.maven.apache.org
+> Could not download httpcore-4.4.16.jar (org.apache.httpcomponents:httpcore:4.4.16)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/apache/httpcomponents/httpcore/4.4.16/httpcore-4.4.16.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/apache/httpcomponents/httpcore/4.4.16/httpcore-4.4.16.jar'.
+         > repo.maven.apache.org
+> Could not download jna-platform-5.6.0.jar (net.java.dev.jna:jna-platform:5.6.0)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/net/java/dev/jna/jna-platform/5.6.0/jna-platform-5.6.0.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/net/java/dev/jna/jna-platform/5.6.0/jna-platform-5.6.0.jar'.
+         > repo.maven.apache.org
+> Could not download juniversalchardet-1.0.3.jar (com.googlecode.juniversalchardet:juniversalchardet:1.0.3)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/googlecode/juniversalchardet/juniversalchardet/1.0.3/juniversalchardet-1.0.3.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/googlecode/juniversalchardet/juniversalchardet/1.0.3/juniversalchardet-1.0.3.jar'.
+         > repo.maven.apache.org
+> Could not download stax-ex-1.8.1.jar (org.jvnet.staxex:stax-ex:1.8.1)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jvnet/staxex/stax-ex/1.8.1/stax-ex-1.8.1.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jvnet/staxex/stax-ex/1.8.1/stax-ex-1.8.1.jar'.
+         > repo.maven.apache.org
+> Could not download jakarta.xml.bind-api-2.3.2.jar (jakarta.xml.bind:jakarta.xml.bind-api:2.3.2)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/jakarta/xml/bind/jakarta.xml.bind-api/2.3.2/jakarta.xml.bind-api-2.3.2.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/jakarta/xml/bind/jakarta.xml.bind-api/2.3.2/jakarta.xml.bind-api-2.3.2.jar'.
+         > repo.maven.apache.org
+> Could not download txw2-2.3.2.jar (org.glassfish.jaxb:txw2:2.3.2)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/glassfish/jaxb/txw2/2.3.2/txw2-2.3.2.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/glassfish/jaxb/txw2/2.3.2/txw2-2.3.2.jar'.
+         > repo.maven.apache.org
+> Could not download istack-commons-runtime-3.0.8.jar (com.sun.istack:istack-commons-runtime:3.0.8)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/sun/istack/istack-commons-runtime/3.0.8/istack-commons-runtime-3.0.8.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/sun/istack/istack-commons-runtime/3.0.8/istack-commons-runtime-3.0.8.jar'.
+         > repo.maven.apache.org
+> Could not download FastInfoset-1.2.16.jar (com.sun.xml.fastinfoset:FastInfoset:1.2.16)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/sun/xml/fastinfoset/FastInfoset/1.2.16/FastInfoset-1.2.16.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/sun/xml/fastinfoset/FastInfoset/1.2.16/FastInfoset-1.2.16.jar'.
+         > repo.maven.apache.org
+> Could not download jakarta.activation-api-1.2.1.jar (jakarta.activation:jakarta.activation-api:1.2.1)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/jakarta/activation/jakarta.activation-api/1.2.1/jakarta.activation-api-1.2.1.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/jakarta/activation/jakarta.activation-api/1.2.1/jakarta.activation-api-1.2.1.jar'.
+         > repo.maven.apache.org
+> Could not download auto-value-annotations-1.6.2.jar (com.google.auto.value:auto-value-annotations:1.6.2)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/auto/value/auto-value-annotations/1.6.2/auto-value-annotations-1.6.2.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/auto/value/auto-value-annotations/1.6.2/auto-value-annotations-1.6.2.jar'.
+         > repo.maven.apache.org
+> Could not download error_prone_annotations-2.28.0.jar (com.google.errorprone:error_prone_annotations:2.28.0)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0.jar'.
+         > repo.maven.apache.org
+> Could not download jose4j-0.9.5.jar (org.bitbucket.b_c:jose4j:0.9.5)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/bitbucket/b_c/jose4j/0.9.5/jose4j-0.9.5.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/bitbucket/b_c/jose4j/0.9.5/jose4j-0.9.5.jar'.
+         > repo.maven.apache.org
+> Could not download slf4j-api-1.7.30.jar (org.slf4j:slf4j-api:1.7.30)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.7.30/slf4j-api-1.7.30.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.7.30/slf4j-api-1.7.30.jar'.
+         > repo.maven.apache.org
+> Could not download jdom2-2.0.6.jar (org.jdom:jdom2:2.0.6)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jdom/jdom2/2.0.6/jdom2-2.0.6.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jdom/jdom2/2.0.6/jdom2-2.0.6.jar'.
+         > repo.maven.apache.org
+> Could not download jsr305-3.0.2.jar (com.google.code.findbugs:jsr305:3.0.2)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar'.
+         > repo.maven.apache.org
+> Could not download j2objc-annotations-3.0.0.jar (com.google.j2objc:j2objc-annotations:3.0.0)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/3.0.0/j2objc-annotations-3.0.0.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/3.0.0/j2objc-annotations-3.0.0.jar'.
+         > repo.maven.apache.org
+> Could not download checker-qual-3.43.0.jar (org.checkerframework:checker-qual:3.43.0)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.jar'.
+         > repo.maven.apache.org
+> Could not download flatbuffers-java-1.12.0.jar (com.google.flatbuffers:flatbuffers-java:1.12.0)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/flatbuffers/flatbuffers-java/1.12.0/flatbuffers-java-1.12.0.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/flatbuffers/flatbuffers-java/1.12.0/flatbuffers-java-1.12.0.jar'.
+         > repo.maven.apache.org
+> Could not download apksig-9.0.1.jar (com.android.tools.build:apksig:9.0.1)
+   > Could not get resource 'https://dl.google.com/dl/android/maven2/com/android/tools/build/apksig/9.0.1/apksig-9.0.1.jar'.
+      > Could not GET 'https://dl.google.com/dl/android/maven2/com/android/tools/build/apksig/9.0.1/apksig-9.0.1.jar'.
+         > dl.google.com
+> Could not download kotlin-gradle-plugin-annotations-2.3.20.jar (org.jetbrains.kotlin:kotlin-gradle-plugin-annotations:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin-annotations/2.3.20/kotlin-gradle-plugin-annotations-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin-annotations/2.3.20/kotlin-gradle-plugin-annotations-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download kotlin-native-utils-2.3.20.jar (org.jetbrains.kotlin:kotlin-native-utils:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-native-utils/2.3.20/kotlin-native-utils-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-native-utils/2.3.20/kotlin-native-utils-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download kotlin-tooling-core-2.3.20.jar (org.jetbrains.kotlin:kotlin-tooling-core:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-tooling-core/2.3.20/kotlin-tooling-core-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-tooling-core/2.3.20/kotlin-tooling-core-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download kotlin-build-tools-api-2.3.20.jar (org.jetbrains.kotlin:kotlin-build-tools-api:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.3.20/kotlin-build-tools-api-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-build-tools-api/2.3.20/kotlin-build-tools-api-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download kotlin-util-klib-2.3.20.jar (org.jetbrains.kotlin:kotlin-util-klib:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-util-klib/2.3.20/kotlin-util-klib-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-util-klib/2.3.20/kotlin-util-klib-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download kotlin-util-io-2.3.20.jar (org.jetbrains.kotlin:kotlin-util-io:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-util-io/2.3.20/kotlin-util-io-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-util-io/2.3.20/kotlin-util-io-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download kotlin-daemon-client-2.3.20.jar (org.jetbrains.kotlin:kotlin-daemon-client:2.3.20)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.3.20/kotlin-daemon-client-2.3.20.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-daemon-client/2.3.20/kotlin-daemon-client-2.3.20.jar'.
+         > repo.maven.apache.org
+> Could not download failureaccess-1.0.2.jar (com.google.guava:failureaccess:1.0.2)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.jar'.
+         > repo.maven.apache.org
+> Could not download listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar (com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar'.
+         > repo.maven.apache.org
+> Could not download commons-codec-1.17.1.jar (commons-codec:commons-codec:1.17.1)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.17.1/commons-codec-1.17.1.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.17.1/commons-codec-1.17.1.jar'.
+         > repo.maven.apache.org
+> Could not download commons-lang3-3.16.0.jar (org.apache.commons:commons-lang3:3.16.0)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.16.0/commons-lang3-3.16.0.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.16.0/commons-lang3-3.16.0.jar'.
+         > repo.maven.apache.org
+> Could not download commons-logging-1.2.jar (commons-logging:commons-logging:1.2)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/commons-logging/commons-logging/1.2/commons-logging-1.2.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/commons-logging/commons-logging/1.2/commons-logging-1.2.jar'.
+         > repo.maven.apache.org
+> Could not download jna-5.6.0.jar (net.java.dev.jna:jna:5.6.0)
+   > Could not get resource 'https://repo.maven.apache.org/maven2/net/java/dev/jna/jna/5.6.0/jna-5.6.0.jar'.
+      > Could not GET 'https://repo.maven.apache.org/maven2/net/java/dev/jna/jna/5.6.0/jna-5.6.0.jar'.
+         > repo.maven.apache.org
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 4s
+Running Gradle task 'assembleRelease'...                            6.0s
+[!] Gradle threw an error while downloading artifacts from the network.
+Gradle task assembleRelease failed with exit code 1
