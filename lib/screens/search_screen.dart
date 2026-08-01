@@ -68,8 +68,8 @@ class _SearchScreenState extends State<SearchScreen> {
     await _firestoreService.addOrUpdateContact(myUid: myUid, contactUid: user.uid, nickname: finalNickname);
 
     if (!mounted) return;
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => ChatScreen(otherUid: user.uid, displayName: finalNickname)));
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => ChatScreen(otherUid: user.uid, displayName: finalNickname, otherPhotoUrl: user.photoUrl)));
   }
 
   @override

@@ -152,6 +152,12 @@ class FirestoreService {
     return _db.collection('chats').doc(chatId).snapshots();
   }
 
+  /// Deletes a chat entirely (used for 1:1 chats). For groups, prefer
+  /// [leaveGroup] instead — deleting the doc removes it for every member.
+  Future<void> deleteChat(String chatId) async {
+    await _db.collection('chats').doc(chatId).delete();
+  }
+
   // ---------- TYPING INDICATOR ----------
 
   Future<void> setTyping(String chatId, String uid, bool isTyping) async {
@@ -175,6 +181,15 @@ class FirestoreService {
     final chatRef = _db.collection('chats').doc(chatId);
     final msgRef = chatRef.collection('messages').doc();
 
+    // Bump the unread counter for every other participant so the chat list
+    // and bottom nav badges can show a count without extra queries.
+    final chatSnap = await chatRef.get();
+    final participants = List<String>.from(chatSnap.data()?['participants'] ?? []);
+    final unreadUpdates = <String, dynamic>{
+      for (final uid in participants)
+        if (uid != senderId) 'unreadCounts.$uid': FieldValue.increment(1),
+    };
+
     final batch = _db.batch();
     batch.set(
       msgRef,
@@ -191,6 +206,7 @@ class FirestoreService {
       'lastMessage': type == 'image' ? '📷 Photo' : trimmed,
       'lastMessageTime': FieldValue.serverTimestamp(),
       'lastSenderId': senderId,
+      ...unreadUpdates,
     });
     await batch.commit();
   }
@@ -203,11 +219,11 @@ class FirestoreService {
   /// loaded from messagesStream (avoids needing another composite index).
   Future<void> markMessagesRead(String chatId, String myUid, List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) async {
     final toUpdate = docs.where((d) => d.data()['senderId'] != myUid && d.data()['status'] == 'sent').toList();
-    if (toUpdate.isEmpty) return;
     final batch = _db.batch();
     for (final doc in toUpdate) {
       batch.update(doc.reference, {'status': 'read'});
     }
+    batch.update(_db.collection('chats').doc(chatId), {'unreadCounts.$myUid': 0});
     await batch.commit();
   }
 
@@ -250,14 +266,30 @@ class FirestoreService {
 
   // ---------- STATUS UPDATES ----------
 
-  Future<void> postStatus({required String uid, String? mediaUrl, String? caption}) async {
+  /// [type] is 'image' or 'text'. For image statuses pass [mediaUrl]; for
+  /// text statuses pass [text] and [bgColor] (an ARGB color int).
+  Future<void> postStatus({
+    required String uid,
+    String type = 'image',
+    String? mediaUrl,
+    String? caption,
+    String? text,
+    int? bgColor,
+  }) async {
     await _db.collection('status_updates').add({
       'uid': uid,
+      'type': type,
       'mediaUrl': mediaUrl,
       'caption': caption ?? '',
+      'text': text,
+      'bgColor': bgColor,
       'createdAt': FieldValue.serverTimestamp(),
       'viewedBy': <String>[],
     });
+  }
+
+  Future<void> deleteStatus(String statusId) async {
+    await _db.collection('status_updates').doc(statusId).delete();
   }
 
   /// Returns status updates from the given uids (contacts + self) posted in

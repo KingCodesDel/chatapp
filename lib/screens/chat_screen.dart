@@ -11,7 +11,9 @@ import '../widgets/app_backdrop.dart';
 import '../widgets/glass_container.dart';
 import '../widgets/user_avatar.dart';
 import '../widgets/message_bubble.dart';
+import 'contact_profile_screen.dart';
 import 'group_info_screen.dart';
+import 'image_viewer_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   /// For a 1:1 chat, pass the other user's uid via [otherUid].
@@ -20,6 +22,7 @@ class ChatScreen extends StatefulWidget {
   final String displayName;
   final bool isGroup;
   final String? groupPhotoUrl;
+  final String? otherPhotoUrl; // the other person's profile photo, for 1:1 chats
 
   const ChatScreen({
     super.key,
@@ -27,6 +30,7 @@ class ChatScreen extends StatefulWidget {
     required this.displayName,
     this.isGroup = false,
     this.groupPhotoUrl,
+    this.otherPhotoUrl,
   });
 
   @override
@@ -47,6 +51,7 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _editingMessageId;
 
   final Map<String, String> _senderNames = {};
+  int? _unreadAtOpen; // captured once, so the divider position doesn't shift as messages get marked read
 
   @override
   void initState() {
@@ -219,12 +224,16 @@ class _ChatScreenState extends State<ChatScreen> {
             child: AppBar(
               titleSpacing: 0,
               title: InkWell(
-                onTap: widget.isGroup && _chatId != null
-                    ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => GroupInfoScreen(chatId: _chatId!)))
-                    : null,
+                onTap: _chatId == null
+                    ? null
+                    : widget.isGroup
+                        ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => GroupInfoScreen(chatId: _chatId!)))
+                        : () => Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => ContactProfileScreen(otherUid: widget.otherUid, currentDisplayName: widget.displayName),
+                            )),
                 child: Row(
                   children: [
-                    UserAvatar(label: widget.displayName, photoUrl: widget.groupPhotoUrl, size: 36),
+                    UserAvatar(label: widget.displayName, photoUrl: widget.isGroup ? widget.groupPhotoUrl : widget.otherPhotoUrl, size: 36),
                     const SizedBox(width: AppSpacing.xs + 4),
                     Expanded(
                       child: Column(
@@ -291,17 +300,39 @@ class _ChatScreenState extends State<ChatScreen> {
                               return const Center(child: CircularProgressIndicator(color: AppColors.primary));
                             }
                             final messages = snapshot.data!.docs;
+                            _unreadAtOpen ??= messages
+                                .where((d) => d.data()['senderId'] != myUid && d.data()['status'] == 'sent')
+                                .length;
+                            final unreadAtOpen = _unreadAtOpen!;
                             _firestoreService.markMessagesRead(_chatId!, myUid, messages);
 
                             if (messages.isEmpty) {
                               return Center(child: Text('Say hi 👋', style: textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary)));
                             }
+                            final showDivider = unreadAtOpen > 0 && unreadAtOpen < messages.length;
                             return ListView.builder(
                               reverse: true,
                               padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                              itemCount: messages.length,
+                              itemCount: messages.length + (showDivider ? 1 : 0),
                               itemBuilder: (context, index) {
-                                final doc = messages[index];
+                                if (showDivider && index == unreadAtOpen) {
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    child: Row(
+                                      children: [
+                                        const Expanded(child: Divider(indent: 24, endIndent: 12)),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                          decoration: BoxDecoration(color: AppColors.accent, borderRadius: BorderRadius.circular(20)),
+                                          child: const Text('New messages', style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600)),
+                                        ),
+                                        const Expanded(child: Divider(indent: 12, endIndent: 24)),
+                                      ],
+                                    ),
+                                  );
+                                }
+                                final msgIndex = (showDivider && index > unreadAtOpen) ? index - 1 : index;
+                                final doc = messages[msgIndex];
                                 final data = doc.data();
                                 final isMe = data['senderId'] == myUid;
                                 final type = data['type'] ?? 'text';
@@ -316,6 +347,10 @@ class _ChatScreenState extends State<ChatScreen> {
                                   deleted: deleted,
                                   senderName: widget.isGroup ? _senderNames[data['senderId']] : null,
                                   onLongPress: (isMe && !deleted) ? () => _showMessageOptions(doc.id, data['text'] ?? '', type) : null,
+                                  onImageTap: (type == 'image' && data['imageUrl'] != null)
+                                      ? () => Navigator.of(context)
+                                          .push(MaterialPageRoute(builder: (_) => ImageViewerScreen(imageUrl: data['imageUrl'])))
+                                      : null,
                                 );
                               },
                             );

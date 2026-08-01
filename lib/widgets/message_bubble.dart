@@ -11,6 +11,7 @@ class MessageBubble extends StatelessWidget {
   final bool deleted;
   final String? senderName; // shown above the bubble in group chats
   final VoidCallback? onLongPress;
+  final VoidCallback? onImageTap;
 
   const MessageBubble({
     super.key,
@@ -23,6 +24,7 @@ class MessageBubble extends StatelessWidget {
     this.deleted = false,
     this.senderName,
     this.onLongPress,
+    this.onImageTap,
   });
 
   @override
@@ -81,16 +83,19 @@ class MessageBubble extends StatelessWidget {
                         ),
                       )
                     else if (isImage)
-                      Image.network(
-                        imageUrl!,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return const SizedBox(
-                              height: 160, width: 160, child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)));
-                        },
-                        errorBuilder: (context, error, stackTrace) =>
-                            const SizedBox(height: 120, width: 160, child: Icon(Icons.broken_image_outlined)),
+                      GestureDetector(
+                        onTap: onImageTap,
+                        child: Image.network(
+                          imageUrl!,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return const SizedBox(
+                                height: 160, width: 160, child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)));
+                          },
+                          errorBuilder: (context, error, stackTrace) =>
+                              const SizedBox(height: 120, width: 160, child: Icon(Icons.broken_image_outlined)),
+                        ),
                       )
                     else
                       Padding(

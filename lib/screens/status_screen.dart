@@ -9,6 +9,16 @@ import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/user_avatar.dart';
 
+const _statusColors = [
+  Color(0xFF0E7C66),
+  Color(0xFFFF6B4A),
+  Color(0xFF5B5FEF),
+  Color(0xFFE0A83E),
+  Color(0xFF3E8FE0),
+  Color(0xFFD64545),
+  Color(0xFF14151A),
+];
+
 class StatusScreen extends StatefulWidget {
   const StatusScreen({super.key});
 
@@ -23,17 +33,61 @@ class _StatusScreenState extends State<StatusScreen> {
   final _picker = ImagePicker();
   bool _posting = false;
 
-  Future<void> _postStatus() async {
+  Future<void> _choosePostType() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.card))),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: AppSpacing.sm),
+            ListTile(
+              leading: const Icon(Icons.image_outlined, color: AppColors.primary),
+              title: const Text('Photo status'),
+              onTap: () => Navigator.pop(context, 'photo'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.text_fields_rounded, color: AppColors.primary),
+              title: const Text('Text status'),
+              onTap: () => Navigator.pop(context, 'text'),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ),
+      ),
+    );
+    if (choice == 'photo') await _postPhotoStatus();
+    if (choice == 'text') await _postTextStatus();
+  }
+
+  Future<void> _postPhotoStatus() async {
     final picked = await _picker.pickImage(source: ImageSource.gallery, maxWidth: 1200, imageQuality: 85);
     if (picked == null) return;
     setState(() => _posting = true);
     try {
       final uid = _authService.currentUser!.uid;
       final url = await _storageService.uploadStatusImage(uid, File(picked.path));
-      await _firestoreService.postStatus(uid: uid, mediaUrl: url);
-      if (mounted) setState(() {}); // refresh the list
+      await _firestoreService.postStatus(uid: uid, type: 'image', mediaUrl: url);
+      if (mounted) setState(() {});
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not post status: $e')));
+    } finally {
+      if (mounted) setState(() => _posting = false);
+    }
+  }
+
+  Future<void> _postTextStatus() async {
+    final result = await Navigator.of(context).push<Map<String, dynamic>>(
+      MaterialPageRoute(builder: (_) => const _TextStatusComposeScreen(), fullscreenDialog: true),
+    );
+    if (result == null) return;
+    setState(() => _posting = true);
+    try {
+      final uid = _authService.currentUser!.uid;
+      await _firestoreService.postStatus(uid: uid, type: 'text', text: result['text'], bgColor: result['bgColor']);
+      if (mounted) setState(() {});
     } finally {
       if (mounted) setState(() => _posting = false);
     }
@@ -72,7 +126,7 @@ class _StatusScreenState extends State<StatusScreen> {
                   ListTile(
                     leading: Stack(
                       children: [
-                        UserAvatar(label: 'Me', size: 52),
+                        const UserAvatar(label: 'Me', size: 52),
                         Positioned(
                           bottom: 0,
                           right: 0,
@@ -89,13 +143,11 @@ class _StatusScreenState extends State<StatusScreen> {
                     title: Text('My status', style: textTheme.titleMedium),
                     subtitle: Text(myStatuses.isEmpty ? 'Tap to add a status update' : '${myStatuses.length} update(s) · tap to view'),
                     onTap: myStatuses.isEmpty
-                        ? _posting
-                            ? null
-                            : _postStatus
-                        : () => _openViewer(context, myStatuses, 'Me'),
+                        ? (_posting ? null : _choosePostType)
+                        : () => _openViewer(context, myStatuses, 'Me', isOwn: true),
                     trailing: myStatuses.isEmpty
                         ? null
-                        : IconButton(icon: const Icon(Icons.add, color: AppColors.primary), onPressed: _posting ? null : _postStatus),
+                        : IconButton(icon: const Icon(Icons.add, color: AppColors.primary), onPressed: _posting ? null : _choosePostType),
                   ),
                   if (byUid.isNotEmpty) ...[
                     const Divider(height: 1),
@@ -117,7 +169,7 @@ class _StatusScreenState extends State<StatusScreen> {
                               ),
                               title: Text(user.username, style: textTheme.titleMedium),
                               subtitle: Text('${entry.value.length} update(s)'),
-                              onTap: () => _openViewer(context, entry.value, user.username),
+                              onTap: () => _openViewer(context, entry.value, user.username, isOwn: false),
                             );
                           },
                         )),
@@ -138,10 +190,86 @@ class _StatusScreenState extends State<StatusScreen> {
     );
   }
 
-  void _openViewer(BuildContext context, List<QueryDocumentSnapshot<Map<String, dynamic>>> statuses, String name) {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => _StatusViewer(statuses: statuses, name: name, firestoreService: _firestoreService, myUid: _authService.currentUser!.uid),
+  void _openViewer(BuildContext context, List<QueryDocumentSnapshot<Map<String, dynamic>>> statuses, String name, {required bool isOwn}) async {
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => _StatusViewer(statuses: statuses, name: name, firestoreService: _firestoreService, myUid: _authService.currentUser!.uid, isOwn: isOwn),
     ));
+    if (mounted) setState(() {}); // refresh in case a status was deleted
+  }
+}
+
+class _TextStatusComposeScreen extends StatefulWidget {
+  const _TextStatusComposeScreen();
+
+  @override
+  State<_TextStatusComposeScreen> createState() => _TextStatusComposeScreenState();
+}
+
+class _TextStatusComposeScreenState extends State<_TextStatusComposeScreen> {
+  final _textCtrl = TextEditingController();
+  Color _bgColor = _statusColors[0];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bgColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.pop(context)),
+                TextButton(
+                  onPressed: _textCtrl.text.trim().isEmpty
+                      ? null
+                      : () => Navigator.pop(context, {'text': _textCtrl.text.trim(), 'bgColor': _bgColor.toARGB32()}),
+                  child: const Text('POST', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ),
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: TextField(
+                    controller: _textCtrl,
+                    autofocus: true,
+                    maxLines: null,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w600),
+                    decoration: const InputDecoration(hintText: "What's on your mind?", hintStyle: TextStyle(color: Colors.white70), border: InputBorder.none),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: _statusColors.map((c) {
+                  final selected = c == _bgColor;
+                  return GestureDetector(
+                    onTap: () => setState(() => _bgColor = c),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 5),
+                      width: selected ? 34 : 28,
+                      height: selected ? 34 : 28,
+                      decoration: BoxDecoration(
+                        color: c,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: selected ? 3 : 1.5),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -150,25 +278,28 @@ class _StatusViewer extends StatefulWidget {
   final String name;
   final FirestoreService firestoreService;
   final String myUid;
+  final bool isOwn;
 
-  const _StatusViewer({required this.statuses, required this.name, required this.firestoreService, required this.myUid});
+  const _StatusViewer({required this.statuses, required this.name, required this.firestoreService, required this.myUid, required this.isOwn});
 
   @override
   State<_StatusViewer> createState() => _StatusViewerState();
 }
 
 class _StatusViewerState extends State<_StatusViewer> {
+  late List<QueryDocumentSnapshot<Map<String, dynamic>>> _statuses;
   int _index = 0;
   final _controller = PageController();
 
   @override
   void initState() {
     super.initState();
-    widget.firestoreService.markStatusViewed(widget.statuses[0].id, widget.myUid);
+    _statuses = List.of(widget.statuses);
+    widget.firestoreService.markStatusViewed(_statuses[0].id, widget.myUid);
   }
 
   void _next() {
-    if (_index < widget.statuses.length - 1) {
+    if (_index < _statuses.length - 1) {
       _controller.nextPage(duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
     } else {
       Navigator.of(context).pop();
@@ -181,6 +312,31 @@ class _StatusViewerState extends State<_StatusViewer> {
     }
   }
 
+  Future<void> _delete() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
+        title: const Text('Delete this status?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('DELETE')),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    await widget.firestoreService.deleteStatus(_statuses[_index].id);
+    if (!mounted) return;
+    if (_statuses.length <= 1) {
+      Navigator.of(context).pop();
+      return;
+    }
+    setState(() {
+      _statuses.removeAt(_index);
+      if (_index >= _statuses.length) _index = _statuses.length - 1;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -190,13 +346,14 @@ class _StatusViewerState extends State<_StatusViewer> {
           children: [
             PageView.builder(
               controller: _controller,
-              itemCount: widget.statuses.length,
+              itemCount: _statuses.length,
               onPageChanged: (i) {
                 setState(() => _index = i);
-                widget.firestoreService.markStatusViewed(widget.statuses[i].id, widget.myUid);
+                widget.firestoreService.markStatusViewed(_statuses[i].id, widget.myUid);
               },
               itemBuilder: (context, i) {
-                final url = widget.statuses[i].data()['mediaUrl'] as String?;
+                final data = _statuses[i].data();
+                final type = data['type'] as String? ?? 'image';
                 return GestureDetector(
                   onTapUp: (details) {
                     final width = MediaQuery.of(context).size.width;
@@ -206,9 +363,22 @@ class _StatusViewerState extends State<_StatusViewer> {
                       _next();
                     }
                   },
-                  child: Center(
-                    child: url != null ? Image.network(url, fit: BoxFit.contain) : const Icon(Icons.image_not_supported, color: Colors.white54, size: 48),
-                  ),
+                  child: type == 'text'
+                      ? Container(
+                          color: Color(data['bgColor'] as int? ?? 0xFF0E7C66),
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          child: Text(
+                            data['text'] as String? ?? '',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w600),
+                          ),
+                        )
+                      : Center(
+                          child: data['mediaUrl'] != null
+                              ? Image.network(data['mediaUrl'], fit: BoxFit.contain)
+                              : const Icon(Icons.image_not_supported, color: Colors.white54, size: 48),
+                        ),
                 );
               },
             ),
@@ -218,15 +388,12 @@ class _StatusViewerState extends State<_StatusViewer> {
               right: 8,
               child: Row(
                 children: List.generate(
-                  widget.statuses.length,
+                  _statuses.length,
                   (i) => Expanded(
                     child: Container(
                       height: 3,
                       margin: const EdgeInsets.symmetric(horizontal: 2),
-                      decoration: BoxDecoration(
-                        color: i <= _index ? Colors.white : Colors.white24,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
+                      decoration: BoxDecoration(color: i <= _index ? Colors.white : Colors.white24, borderRadius: BorderRadius.circular(2)),
                     ),
                   ),
                 ),
@@ -240,7 +407,12 @@ class _StatusViewerState extends State<_StatusViewer> {
             Positioned(
               top: 16,
               right: 8,
-              child: IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.of(context).pop()),
+              child: Row(
+                children: [
+                  if (widget.isOwn) IconButton(icon: const Icon(Icons.delete_outline_rounded, color: Colors.white), onPressed: _delete),
+                  IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.of(context).pop()),
+                ],
+              ),
             ),
           ],
         ),

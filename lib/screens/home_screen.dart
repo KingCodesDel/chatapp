@@ -128,12 +128,49 @@ class _HomeScreenState extends State<HomeScreen> {
                   blur: 24,
                   child: SizedBox(
                     height: _navHeight,
-                    child: Row(
-                      children: [
-                        _NavItem(icon: Icons.chat_bubble_rounded, label: 'Chats', selected: _tabIndex == 0, onTap: () => setState(() => _tabIndex = 0)),
-                        _NavItem(icon: Icons.groups_rounded, label: 'Groups', selected: _tabIndex == 1, onTap: () => setState(() => _tabIndex = 1)),
-                        _NavItem(icon: Icons.donut_large_rounded, label: 'Status', selected: _tabIndex == 2, onTap: () => setState(() => _tabIndex = 2)),
-                      ],
+                    child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                      stream: _firestoreService.chatsStream(myUid),
+                      builder: (context, snap) {
+                        int chatsUnread = 0;
+                        int groupsUnread = 0;
+                        for (final doc in snap.data?.docs ?? <QueryDocumentSnapshot<Map<String, dynamic>>>[]) {
+                          final data = doc.data();
+                          final count = (data['unreadCounts'] as Map<String, dynamic>?)?[myUid] as int? ?? 0;
+                          if (data['isGroup'] == true) {
+                            groupsUnread += count;
+                          } else {
+                            chatsUnread += count;
+                          }
+                        }
+                        return Row(
+                          children: [
+                            _NavItem(
+                              iconOutline: Icons.chat_bubble_outline_rounded,
+                              iconFilled: Icons.chat_bubble_rounded,
+                              label: 'Chats',
+                              selected: _tabIndex == 0,
+                              badgeCount: chatsUnread,
+                              onTap: () => setState(() => _tabIndex = 0),
+                            ),
+                            _NavItem(
+                              iconOutline: Icons.groups_2_outlined,
+                              iconFilled: Icons.groups_2_rounded,
+                              label: 'Groups',
+                              selected: _tabIndex == 1,
+                              badgeCount: groupsUnread,
+                              onTap: () => setState(() => _tabIndex = 1),
+                            ),
+                            _NavItem(
+                              iconOutline: Icons.circle_outlined,
+                              iconFilled: Icons.blur_circular_rounded,
+                              label: 'Status',
+                              selected: _tabIndex == 2,
+                              badgeCount: 0,
+                              onTap: () => setState(() => _tabIndex = 2),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -147,12 +184,21 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _NavItem extends StatelessWidget {
-  final IconData icon;
+  final IconData iconOutline;
+  final IconData iconFilled;
   final String label;
   final bool selected;
+  final int badgeCount;
   final VoidCallback onTap;
 
-  const _NavItem({required this.icon, required this.label, required this.selected, required this.onTap});
+  const _NavItem({
+    required this.iconOutline,
+    required this.iconFilled,
+    required this.label,
+    required this.selected,
+    required this.badgeCount,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -161,13 +207,44 @@ class _NavItem extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 2),
-            Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: selected ? FontWeight.w600 : FontWeight.w400)),
-          ],
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: selected ? AppColors.primary.withValues(alpha: 0.12) : Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(selected ? iconFilled : iconOutline, color: color, size: 22),
+                    const SizedBox(height: 2),
+                    Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: selected ? FontWeight.w600 : FontWeight.w400)),
+                  ],
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    top: -2,
+                    right: -6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      constraints: const BoxConstraints(minWidth: 16),
+                      decoration: BoxDecoration(color: AppColors.accent, borderRadius: BorderRadius.circular(20)),
+                      child: Text(
+                        badgeCount > 99 ? '99+' : '$badgeCount',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -249,13 +326,21 @@ class _ChatList extends StatelessWidget {
             if (isGroup) {
               final groupName = chat['groupName'] as String? ?? 'Group';
               final groupPhotoUrl = chat['groupPhotoUrl'] as String?;
-              return _ChatRow(
-                displayName: groupName,
-                photoUrl: groupPhotoUrl,
-                lastMessage: chat['lastMessage'] as String? ?? '',
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => ChatScreen(otherUid: chatDoc.id, displayName: groupName, isGroup: true, groupPhotoUrl: groupPhotoUrl),
-                )),
+              return Dismissible(
+                key: Key(chatDoc.id),
+                direction: DismissDirection.endToStart,
+                background: _deleteBackground(),
+                confirmDismiss: (_) => _confirmLeaveGroup(context),
+                onDismissed: (_) => firestoreService.leaveGroup(chatDoc.id, myUid),
+                child: _ChatRow(
+                  displayName: groupName,
+                  photoUrl: groupPhotoUrl,
+                  lastMessage: chat['lastMessage'] as String? ?? '',
+                  unreadCount: (chat['unreadCounts'] as Map<String, dynamic>?)?[myUid] as int? ?? 0,
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => ChatScreen(otherUid: chatDoc.id, displayName: groupName, isGroup: true, groupPhotoUrl: groupPhotoUrl),
+                  )),
+                ),
               );
             }
 
@@ -277,12 +362,21 @@ class _ChatList extends StatelessWidget {
                       if (nickname != null && nickname.trim().isNotEmpty) displayName = nickname;
                     }
 
-                    return _ChatRow(
-                      displayName: displayName,
-                      photoUrl: otherUser.photoUrl,
-                      lastMessage: chat['lastMessage'] as String? ?? '',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => ChatScreen(otherUid: otherUid, displayName: displayName)),
+                    return Dismissible(
+                      key: Key(chatDoc.id),
+                      direction: DismissDirection.endToStart,
+                      background: _deleteBackground(),
+                      confirmDismiss: (_) => _confirmDeleteChat(context),
+                      onDismissed: (_) => firestoreService.deleteChat(chatDoc.id),
+                      child: _ChatRow(
+                        displayName: displayName,
+                        photoUrl: otherUser.photoUrl,
+                        lastMessage: chat['lastMessage'] as String? ?? '',
+                        unreadCount: (chat['unreadCounts'] as Map<String, dynamic>?)?[myUid] as int? ?? 0,
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) => ChatScreen(otherUid: otherUid, displayName: displayName, otherPhotoUrl: otherUser.photoUrl)),
+                        ),
                       ),
                     );
                   },
@@ -294,19 +388,68 @@ class _ChatList extends StatelessWidget {
       },
     );
   }
+
+  Widget _deleteBackground() {
+    return Container(
+      alignment: Alignment.centerRight,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      color: Colors.red,
+      child: const Icon(Icons.delete_rounded, color: Colors.white),
+    );
+  }
+
+  Future<bool> _confirmDeleteChat(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
+        title: const Text('Delete this chat?'),
+        content: const Text('This removes the conversation from your list. This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('DELETE')),
+        ],
+      ),
+    );
+    return confirm ?? false;
+  }
+
+  Future<bool> _confirmLeaveGroup(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
+        title: const Text('Leave this group?'),
+        content: const Text("You'll need to be re-added to rejoin."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('LEAVE')),
+        ],
+      ),
+    );
+    return confirm ?? false;
+  }
 }
 
 class _ChatRow extends StatelessWidget {
   final String displayName;
   final String? photoUrl;
   final String lastMessage;
+  final int unreadCount;
   final VoidCallback onTap;
 
-  const _ChatRow({required this.displayName, required this.photoUrl, required this.lastMessage, required this.onTap});
+  const _ChatRow({
+    required this.displayName,
+    required this.photoUrl,
+    required this.lastMessage,
+    required this.unreadCount,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final unread = unreadCount > 0;
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -321,10 +464,34 @@ class _ChatRow extends StatelessWidget {
                 children: [
                   Text(displayName, style: textTheme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 2),
-                  Text(lastMessage.isNotEmpty ? lastMessage : 'Say hi 👋', style: textTheme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(
+                    lastMessage.isNotEmpty ? lastMessage : 'Say hi 👋',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: unread ? AppColors.textPrimary : AppColors.textSecondary,
+                      fontWeight: unread ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             ),
+            if (unread) ...[
+              const SizedBox(width: AppSpacing.xs),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                constraints: const BoxConstraints(minWidth: 22),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(colors: [AppColors.primary, AppColors.primaryDark]),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  unreadCount > 99 ? '99+' : '$unreadCount',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
           ],
         ),
       ),
