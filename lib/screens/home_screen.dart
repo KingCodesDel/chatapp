@@ -145,8 +145,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         return Row(
                           children: [
                             _NavItem(
-                              iconOutline: Icons.chat_bubble_outline_rounded,
-                              iconFilled: Icons.chat_bubble_rounded,
+                              iconOutline: Icons.forum_outlined,
+                              iconFilled: Icons.forum_rounded,
                               label: 'Chats',
                               selected: _tabIndex == 0,
                               badgeCount: chatsUnread,
@@ -161,8 +161,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               onTap: () => setState(() => _tabIndex = 1),
                             ),
                             _NavItem(
-                              iconOutline: Icons.circle_outlined,
-                              iconFilled: Icons.blur_circular_rounded,
+                              iconOutline: Icons.radio_button_unchecked_rounded,
+                              iconFilled: Icons.circle_rounded,
                               label: 'Status',
                               selected: _tabIndex == 2,
                               badgeCount: 0,
@@ -303,12 +303,12 @@ class _ChatList extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(isGroup ? Icons.groups_outlined : Icons.forum_outlined, size: 48, color: AppColors.textSecondary),
+                  Icon(isGroup ? Icons.groups_outlined : Icons.forum_outlined, size: 48, color: AppColorsX.of(context).textSecondary),
                   const SizedBox(height: AppSpacing.sm),
                   Text(isGroup ? 'No groups yet' : 'No chats yet', style: textTheme.titleLarge),
                   const SizedBox(height: 4),
                   Text(isGroup ? 'Tap + to create a group' : 'Tap + to start a chat',
-                      style: textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary), textAlign: TextAlign.center),
+                      style: textTheme.bodyMedium?.copyWith(color: AppColorsX.of(context).textSecondary), textAlign: TextAlign.center),
                 ],
               ),
             ),
@@ -337,6 +337,7 @@ class _ChatList extends StatelessWidget {
                   photoUrl: groupPhotoUrl,
                   lastMessage: chat['lastMessage'] as String? ?? '',
                   unreadCount: (chat['unreadCounts'] as Map<String, dynamic>?)?[myUid] as int? ?? 0,
+                  muted: (chat['muted'] as Map<String, dynamic>?)?[myUid] == true,
                   onTap: () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => ChatScreen(otherUid: chatDoc.id, displayName: groupName, isGroup: true, groupPhotoUrl: groupPhotoUrl),
                   )),
@@ -373,6 +374,7 @@ class _ChatList extends StatelessWidget {
                         photoUrl: otherUser.photoUrl,
                         lastMessage: chat['lastMessage'] as String? ?? '',
                         unreadCount: (chat['unreadCounts'] as Map<String, dynamic>?)?[myUid] as int? ?? 0,
+                  muted: (chat['muted'] as Map<String, dynamic>?)?[myUid] == true,
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute(
                               builder: (_) => ChatScreen(otherUid: otherUid, displayName: displayName, otherPhotoUrl: otherUser.photoUrl)),
@@ -436,6 +438,7 @@ class _ChatRow extends StatelessWidget {
   final String? photoUrl;
   final String lastMessage;
   final int unreadCount;
+  final bool muted;
   final VoidCallback onTap;
 
   const _ChatRow({
@@ -443,6 +446,7 @@ class _ChatRow extends StatelessWidget {
     required this.photoUrl,
     required this.lastMessage,
     required this.unreadCount,
+    required this.muted,
     required this.onTap,
   });
 
@@ -462,12 +466,20 @@ class _ChatRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(displayName, style: textTheme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Row(
+                    children: [
+                      Flexible(child: Text(displayName, style: textTheme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      if (muted) ...[
+                        const SizedBox(width: 4),
+                        Icon(Icons.notifications_off_rounded, size: 14, color: AppColorsX.of(context).textSecondary),
+                      ],
+                    ],
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     lastMessage.isNotEmpty ? lastMessage : 'Say hi 👋',
                     style: textTheme.bodySmall?.copyWith(
-                      color: unread ? AppColors.textPrimary : AppColors.textSecondary,
+                      color: unread ? AppColorsX.of(context).textPrimary : AppColorsX.of(context).textSecondary,
                       fontWeight: unread ? FontWeight.w600 : FontWeight.w400,
                     ),
                     maxLines: 1,

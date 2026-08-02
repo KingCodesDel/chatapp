@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
@@ -145,6 +146,16 @@ class _ChatScreenState extends State<ChatScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: AppSpacing.sm),
+            if (type == 'text')
+              ListTile(
+                leading: const Icon(Icons.copy_rounded, color: AppColors.primary),
+                title: const Text('Copy text'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Clipboard.setData(ClipboardData(text: currentText));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied')));
+                },
+              ),
             if (type == 'text')
               ListTile(
                 leading: const Icon(Icons.edit_rounded, color: AppColors.primary),
@@ -310,6 +321,11 @@ class _ChatScreenState extends State<ChatScreen> {
                               return Center(child: Text('Say hi 👋', style: textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary)));
                             }
                             final showDivider = unreadAtOpen > 0 && unreadAtOpen < messages.length;
+                            // Chronological (oldest-first) list of image messages, so swiping
+                            // through the viewer moves forward in time — the natural direction.
+                            final imageMessages = messages.reversed
+                                .where((d) => (d.data()['type'] ?? 'text') == 'image' && d.data()['imageUrl'] != null && d.data()['deleted'] != true)
+                                .toList();
                             return ListView.builder(
                               reverse: true,
                               padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -347,9 +363,13 @@ class _ChatScreenState extends State<ChatScreen> {
                                   deleted: deleted,
                                   senderName: widget.isGroup ? _senderNames[data['senderId']] : null,
                                   onLongPress: (isMe && !deleted) ? () => _showMessageOptions(doc.id, data['text'] ?? '', type) : null,
-                                  onImageTap: (type == 'image' && data['imageUrl'] != null)
-                                      ? () => Navigator.of(context)
-                                          .push(MaterialPageRoute(builder: (_) => ImageViewerScreen(imageUrl: data['imageUrl'])))
+                                  onImageTap: (type == 'image' && data['imageUrl'] != null && !deleted)
+                                      ? () {
+                                          final urls = imageMessages.map((d) => d.data()['imageUrl'] as String).toList();
+                                          final tapIndex = imageMessages.indexWhere((d) => d.id == doc.id);
+                                          Navigator.of(context).push(MaterialPageRoute(
+                                              builder: (_) => ImageViewerScreen(imageUrls: urls, initialIndex: tapIndex < 0 ? 0 : tapIndex)));
+                                        }
                                       : null,
                                 );
                               },

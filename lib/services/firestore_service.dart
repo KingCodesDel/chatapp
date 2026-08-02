@@ -158,6 +158,13 @@ class FirestoreService {
     await _db.collection('chats').doc(chatId).delete();
   }
 
+  /// Mutes/unmutes notifications for this chat, for the given user only.
+  Future<void> setMuted(String chatId, String uid, bool muted) async {
+    await _db.collection('chats').doc(chatId).set({
+      'muted': {uid: muted}
+    }, SetOptions(merge: true));
+  }
+
   // ---------- TYPING INDICATOR ----------
 
   Future<void> setTyping(String chatId, String uid, bool isTyping) async {

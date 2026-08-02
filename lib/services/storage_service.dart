@@ -9,13 +9,11 @@ import 'package:http/http.dart' as http;
 /// - cloudName: shown on your Cloudinary dashboard
 /// - uploadPreset: the "unsigned" preset you created in Settings > Upload
 class StorageService {
-  static const String _cloudName = 'gylcis4j';
-  static const String _uploadPreset = 'chat_app_uploads';
+  static const String _cloudName = 'YOUR_CLOUD_NAME';
+  static const String _uploadPreset = 'YOUR_UPLOAD_PRESET';
 
   Future<String> _upload(File file, String folder) async {
-    final url = Uri.parse(
-      'https://api.cloudinary.com/v1_1/$_cloudName/image/upload',
-    );
+    final url = Uri.parse('https://api.cloudinary.com/v1_1/$_cloudName/image/upload');
     final request = http.MultipartRequest('POST', url)
       ..fields['upload_preset'] = _uploadPreset
       ..fields['folder'] = folder
@@ -32,15 +30,11 @@ class StorageService {
     return data['secure_url'] as String;
   }
 
-  Future<String> uploadProfilePhoto(String uid, File file) =>
-      _upload(file, 'profile_photos');
+  Future<String> uploadProfilePhoto(String uid, File file) => _upload(file, 'profile_photos');
 
-  Future<String> uploadChatImage(String chatId, File file) =>
-      _upload(file, 'chat_images/$chatId');
+  Future<String> uploadChatImage(String chatId, File file) => _upload(file, 'chat_images/$chatId');
 
-  Future<String> uploadGroupPhoto(String chatId, File file) =>
-      _upload(file, 'group_photos');
+  Future<String> uploadGroupPhoto(String chatId, File file) => _upload(file, 'group_photos');
 
-  Future<String> uploadStatusImage(String uid, File file) =>
-      _upload(file, 'status_updates/$uid');
+  Future<String> uploadStatusImage(String uid, File file) => _upload(file, 'status_updates/$uid');
 }

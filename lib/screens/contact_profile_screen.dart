@@ -124,15 +124,21 @@ class _ContactProfileScreenState extends State<ContactProfileScreen> {
             stream: _firestoreService.isBlockedByMeStream(myUid, widget.otherUid),
             builder: (context, blockSnap) {
               final blocked = blockSnap.data ?? false;
+              final chatId = _firestoreService.buildChatId(myUid, widget.otherUid);
 
-              return ListView(
+              return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                stream: _firestoreService.chatDocStream(chatId),
+                builder: (context, chatSnap) {
+                  final muted = (chatSnap.data?.data()?['muted'] as Map<String, dynamic>?)?[myUid] == true;
+
+                  return ListView(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 children: [
                   Center(
                     child: GestureDetector(
                       onTap: (user.photoUrl.isEmpty)
                           ? null
-                          : () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ImageViewerScreen(imageUrl: user.photoUrl))),
+                          : () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ImageViewerScreen(imageUrls: [user.photoUrl]))),
                       child: UserAvatar(label: user.username, photoUrl: user.photoUrl, size: 140),
                     ),
                   ),
@@ -160,6 +166,12 @@ class _ContactProfileScreenState extends State<ContactProfileScreen> {
                   const SizedBox(height: AppSpacing.lg),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
+                    leading: Icon(muted ? Icons.notifications_off_rounded : Icons.notifications_none_rounded, color: AppColors.primary),
+                    title: Text(muted ? 'Unmute notifications' : 'Mute notifications'),
+                    onTap: () => _firestoreService.setMuted(chatId, myUid, !muted),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
                     leading: Icon(blocked ? Icons.person_add_alt_1_rounded : Icons.block_rounded, color: blocked ? AppColors.primary : Colors.red),
                     title: Text(blocked ? 'Unblock' : 'Block', style: TextStyle(color: blocked ? AppColors.primary : Colors.red)),
                     onTap: () => _toggleBlock(blocked),
@@ -176,7 +188,9 @@ class _ContactProfileScreenState extends State<ContactProfileScreen> {
                     title: const Text('Delete chat', style: TextStyle(color: Colors.red)),
                     onTap: _deleteChat,
                   ),
-                ],
+                    ],
+                  );
+                },
               );
             },
           );
