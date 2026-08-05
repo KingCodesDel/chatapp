@@ -146,37 +146,6 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     );
   }
 
-  Future<void> _setDisappearing(int? currentSeconds) async {
-    final options = {'Off': null, '24 hours': 86400, '7 days': 604800};
-    final choice = await showDialog<int?>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: const Text('Disappearing messages'),
-        children: options.entries
-            .map((e) => SimpleDialogOption(
-                  onPressed: () => Navigator.pop(context, e.value),
-                  child: Row(
-                    children: [
-                      if (currentSeconds == e.value) const Icon(Icons.check, size: 18, color: AppColors.primary),
-                      if (currentSeconds == e.value) const SizedBox(width: 8),
-                      Text(e.key),
-                    ],
-                  ),
-                ))
-            .toList(),
-      ),
-    );
-    if (choice == currentSeconds) return;
-    await _firestoreService.setDisappearingSeconds(widget.chatId, choice);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(choice == null
-            ? 'Disappearing messages turned off'
-            : 'New messages will disappear after ${choice == 86400 ? '24 hours' : '7 days'}'),
-      ));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final myUid = _authService.currentUser!.uid;
@@ -273,17 +242,6 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                 title: const Text('Invite via link'),
                 subtitle: const Text('Share a code so someone can join'),
                 onTap: _shareInviteLink,
-              ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.timer_outlined, color: AppColors.primary),
-                title: const Text('Disappearing messages'),
-                subtitle: Text(chat['disappearingSeconds'] == null
-                    ? 'Off'
-                    : chat['disappearingSeconds'] == 86400
-                        ? '24 hours'
-                        : '7 days'),
-                onTap: () => _setDisappearing(chat['disappearingSeconds'] as int?),
               ),
               const SizedBox(height: AppSpacing.sm),
               OutlinedButton.icon(

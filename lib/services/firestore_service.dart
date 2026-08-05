@@ -187,15 +187,6 @@ class FirestoreService {
     }, SetOptions(merge: true));
   }
 
-  /// Sets how long messages in this chat stay visible before disappearing.
-  /// Pass null to turn disappearing messages off. Relies on a Firestore TTL
-  /// policy configured on the `expiresAt` field of the `messages` collection
-  /// group (Firestore Console → your database → TTL tab) — free, no Cloud
-  /// Function needed, but you do need to set that policy up once.
-  Future<void> setDisappearingSeconds(String chatId, int? seconds) async {
-    await _db.collection('chats').doc(chatId).update({'disappearingSeconds': seconds});
-  }
-
   // ---------- INVITE LINKS ----------
 
   String _randomCode() {
@@ -264,12 +255,6 @@ class FirestoreService {
         if (uid != senderId) 'unreadCounts.$uid': FieldValue.increment(1),
     };
 
-    Timestamp? expiresAt;
-    final disappearingSeconds = chatData['disappearingSeconds'] as int?;
-    if (disappearingSeconds != null && disappearingSeconds > 0) {
-      expiresAt = Timestamp.fromDate(DateTime.now().add(Duration(seconds: disappearingSeconds)));
-    }
-
     final previewText = switch (type) {
       'image' => '📷 Photo',
       'voice' => '🎤 Voice message',
@@ -299,7 +284,6 @@ class FirestoreService {
         pollQuestion: pollQuestion,
         pollOptions: pollOptions,
         pollVotes: pollOptions != null ? {for (var i = 0; i < pollOptions.length; i++) '$i': <String>[]} : null,
-        expiresAt: expiresAt,
       ).toMap(),
     );
     batch.update(chatRef, {
