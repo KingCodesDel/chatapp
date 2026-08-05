@@ -26,6 +26,7 @@ class Message {
   final String? pollQuestion;
   final List<String>? pollOptions;
   final Map<String, List<String>>? pollVotes; // optionIndex(as string) -> [uids]
+  final Timestamp? expiresAt;
 
   Message({
     required this.id,
@@ -50,6 +51,7 @@ class Message {
     this.pollQuestion,
     this.pollOptions,
     this.pollVotes,
+    this.expiresAt,
   });
 
   factory Message.fromMap(String id, Map<String, dynamic> map) {
@@ -78,6 +80,7 @@ class Message {
       pollVotes: map['pollVotes'] != null
           ? (map['pollVotes'] as Map).map((k, v) => MapEntry(k.toString(), List<String>.from(v)))
           : null,
+      expiresAt: map['expiresAt'],
     );
   }
 
@@ -104,6 +107,7 @@ class Message {
       'pollQuestion': pollQuestion,
       'pollOptions': pollOptions,
       'pollVotes': pollVotes,
+      if (expiresAt != null) 'expiresAt': expiresAt,
     };
   }
 }
