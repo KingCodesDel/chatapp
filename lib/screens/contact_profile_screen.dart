@@ -22,11 +22,29 @@ class _ContactProfileScreenState extends State<ContactProfileScreen> {
   final _authService = AuthService();
   late final TextEditingController _nicknameCtrl;
   bool _saving = false;
+  bool _myShowLastSeen = true;
 
   @override
   void initState() {
     super.initState();
     _nicknameCtrl = TextEditingController(text: widget.currentDisplayName);
+    _loadMyPrivacyPref();
+  }
+
+  Future<void> _loadMyPrivacyPref() async {
+    final doc = await FirebaseFirestore.instance.collection('users').doc(_authService.currentUser!.uid).get();
+    if (mounted) setState(() => _myShowLastSeen = doc.data()?['showLastSeen'] != false);
+  }
+
+  String _presenceText(Map<String, dynamic>? data) {
+    if (data?['online'] == true) return 'Online';
+    final lastSeen = data?['lastSeen'] as Timestamp?;
+    if (lastSeen == null) return '';
+    final diff = DateTime.now().difference(lastSeen.toDate());
+    if (diff.inMinutes < 1) return 'Last seen just now';
+    if (diff.inHours < 1) return 'Last seen ${diff.inMinutes}m ago';
+    if (diff.inDays < 1) return 'Last seen ${diff.inHours}h ago';
+    return 'Last seen ${diff.inDays}d ago';
   }
 
   Future<void> _saveNickname() async {
@@ -107,6 +125,30 @@ class _ContactProfileScreenState extends State<ContactProfileScreen> {
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report submitted')));
   }
 
+  Future<void> _setDisappearing(String chatId, int? currentSeconds) async {
+    final options = {'Off': null, '24 hours': 86400, '7 days': 604800};
+    final choice = await showDialog<int?>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Disappearing messages'),
+        children: options.entries
+            .map((e) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(context, e.value),
+                  child: Row(
+                    children: [
+                      if (currentSeconds == e.value) const Icon(Icons.check, size: 18, color: AppColors.primary),
+                      if (currentSeconds == e.value) const SizedBox(width: 8),
+                      Text(e.key),
+                    ],
+                  ),
+                ))
+            .toList(),
+      ),
+    );
+    if (choice == currentSeconds) return;
+    await _firestoreService.setDisappearingSeconds(chatId, choice);
+  }
+
   @override
   Widget build(BuildContext context) {
     final myUid = _authService.currentUser!.uid;
@@ -144,6 +186,8 @@ class _ContactProfileScreenState extends State<ContactProfileScreen> {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Center(child: Text('@${user.username}', style: textTheme.titleLarge)),
+                  if (_myShowLastSeen && (snap.data!.data()?['showLastSeen'] != false))
+                    Center(child: Text(_presenceText(snap.data!.data()), style: textTheme.bodySmall?.copyWith(color: AppColors.textSecondary))),
                   if (user.bio.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Center(child: Text(user.bio, style: textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary), textAlign: TextAlign.center)),
@@ -169,6 +213,17 @@ class _ContactProfileScreenState extends State<ContactProfileScreen> {
                     leading: Icon(muted ? Icons.notifications_off_rounded : Icons.notifications_none_rounded, color: AppColors.primary),
                     title: Text(muted ? 'Unmute notifications' : 'Mute notifications'),
                     onTap: () => _firestoreService.setMuted(chatId, myUid, !muted),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.timer_outlined, color: AppColors.primary),
+                    title: const Text('Disappearing messages'),
+                    subtitle: Text(() {
+                      final s = chatSnap.data?.data()?['disappearingSeconds'] as int?;
+                      if (s == null) return 'Off';
+                      return s == 86400 ? '24 hours' : '7 days';
+                    }()),
+                    onTap: () => _setDisappearing(chatId, chatSnap.data?.data()?['disappearingSeconds'] as int?),
                   ),
                   ListTile(
                     contentPadding: EdgeInsets.zero,

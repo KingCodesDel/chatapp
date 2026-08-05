@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/app_user.dart';
 import '../services/auth_service.dart';
@@ -109,6 +110,73 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     await _firestoreService.removeGroupMember(widget.chatId, uid);
   }
 
+  Future<void> _shareInviteLink() async {
+    final code = await _firestoreService.createGroupInvite(widget.chatId);
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
+        title: const Text('Invite code'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Share this code — anyone who enters it under "Join a group" will be added.'),
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+              child: Text(code, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: 3, color: AppColors.primary)),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: code));
+              Navigator.pop(context);
+            },
+            child: const Text('COPY & CLOSE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _setDisappearing(int? currentSeconds) async {
+    final options = {'Off': null, '24 hours': 86400, '7 days': 604800};
+    final choice = await showDialog<int?>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Disappearing messages'),
+        children: options.entries
+            .map((e) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(context, e.value),
+                  child: Row(
+                    children: [
+                      if (currentSeconds == e.value) const Icon(Icons.check, size: 18, color: AppColors.primary),
+                      if (currentSeconds == e.value) const SizedBox(width: 8),
+                      Text(e.key),
+                    ],
+                  ),
+                ))
+            .toList(),
+      ),
+    );
+    if (choice == currentSeconds) return;
+    await _firestoreService.setDisappearingSeconds(widget.chatId, choice);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(choice == null
+            ? 'Disappearing messages turned off'
+            : 'New messages will disappear after ${choice == 86400 ? '24 hours' : '7 days'}'),
+      ));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final myUid = _authService.currentUser!.uid;
@@ -198,6 +266,26 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                     },
                   )),
               const SizedBox(height: AppSpacing.lg),
+              const Divider(),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.link_rounded, color: AppColors.primary),
+                title: const Text('Invite via link'),
+                subtitle: const Text('Share a code so someone can join'),
+                onTap: _shareInviteLink,
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.timer_outlined, color: AppColors.primary),
+                title: const Text('Disappearing messages'),
+                subtitle: Text(chat['disappearingSeconds'] == null
+                    ? 'Off'
+                    : chat['disappearingSeconds'] == 86400
+                        ? '24 hours'
+                        : '7 days'),
+                onTap: () => _setDisappearing(chat['disappearingSeconds'] as int?),
+              ),
+              const SizedBox(height: AppSpacing.sm),
               OutlinedButton.icon(
                 onPressed: _leaveGroup,
                 icon: const Icon(Icons.exit_to_app_rounded, color: Color(0xFFD64545)),

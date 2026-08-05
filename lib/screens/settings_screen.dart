@@ -1,7 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/firestore_service.dart';
 import '../services/theme_controller.dart';
 import '../theme/app_theme.dart';
+import 'archived_chats_screen.dart';
+import 'starred_messages_screen.dart';
 import 'login_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -10,6 +14,8 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final firestoreService = FirestoreService();
+    final myUid = AuthService().currentUser!.uid;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -31,6 +37,62 @@ class SettingsScreen extends StatelessWidget {
                   secondary: Icon(mode == ThemeMode.dark ? Icons.dark_mode_rounded : Icons.light_mode_rounded, color: AppColors.primary),
                   value: mode == ThemeMode.dark,
                   onChanged: (value) => ThemeController.instance.setDark(value),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text('Chats', style: textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.xs),
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card), side: BorderSide(color: Theme.of(context).dividerColor)),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.archive_outlined, color: AppColors.primary),
+                  title: const Text('Archived chats'),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ArchivedChatsScreen())),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: Icon(Icons.star_outline_rounded, color: Colors.amber.shade700),
+                  title: const Text('Starred messages'),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StarredMessagesScreen())),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text('Privacy', style: textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.xs),
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card), side: BorderSide(color: Theme.of(context).dividerColor)),
+            child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+              stream: firestoreService.userStream(myUid),
+              builder: (context, snap) {
+                final data = snap.data?.data();
+                final showLastSeen = data?['showLastSeen'] ?? true;
+                final showReadReceipts = data?['showReadReceipts'] ?? true;
+                return Column(
+                  children: [
+                    SwitchListTile(
+                      activeThumbColor: AppColors.primary,
+                      title: const Text('Show last seen & online status'),
+                      subtitle: const Text('If off, you also won\'t see it for others'),
+                      value: showLastSeen,
+                      onChanged: (v) => firestoreService.updatePrivacySettings(uid: myUid, showLastSeen: v),
+                    ),
+                    const Divider(height: 1),
+                    SwitchListTile(
+                      activeThumbColor: AppColors.primary,
+                      title: const Text('Send read receipts'),
+                      subtitle: const Text('If off, others won\'t see the double-check when you read their messages'),
+                      value: showReadReceipts,
+                      onChanged: (v) => firestoreService.updatePrivacySettings(uid: myUid, showReadReceipts: v),
+                    ),
+                  ],
                 );
               },
             ),

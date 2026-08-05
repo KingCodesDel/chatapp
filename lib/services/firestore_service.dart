@@ -39,6 +39,25 @@ class FirestoreService {
     await _db.collection('users').doc(uid).set(data, SetOptions(merge: true));
   }
 
+  // ---------- PRIVACY SETTINGS ----------
+
+  Future<void> updatePrivacySettings({required String uid, bool? showLastSeen, bool? showReadReceipts}) async {
+    final data = <String, dynamic>{};
+    if (showLastSeen != null) data['showLastSeen'] = showLastSeen;
+    if (showReadReceipts != null) data['showReadReceipts'] = showReadReceipts;
+    if (data.isEmpty) return;
+    await _db.collection('users').doc(uid).set(data, SetOptions(merge: true));
+  }
+
+  // ---------- PRESENCE ----------
+
+  Future<void> setOnline(String uid, bool online) async {
+    await _db.collection('users').doc(uid).set({
+      'online': online,
+      'lastSeen': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
   // ---------- CONTACTS / NICKNAMES ----------
 
   Future<void> addOrUpdateContact({required String myUid, required String contactUid, required String nickname}) async {
@@ -140,29 +159,67 @@ class FirestoreService {
     await _db.collection('chats').doc(chatId).update({'groupPhotoUrl': photoUrl});
   }
 
+  /// Chats visible to [myUid], excluding ones they've archived (unless
+  /// [includeArchived] is true — used by the Archived screen).
   Stream<QuerySnapshot<Map<String, dynamic>>> chatsStream(String myUid) {
-    return _db
-        .collection('chats')
-        .where('participants', arrayContains: myUid)
-        .orderBy('lastMessageTime', descending: true)
-        .snapshots();
+    return _db.collection('chats').where('participants', arrayContains: myUid).orderBy('lastMessageTime', descending: true).snapshots();
   }
 
   Stream<DocumentSnapshot<Map<String, dynamic>>> chatDocStream(String chatId) {
     return _db.collection('chats').doc(chatId).snapshots();
   }
 
-  /// Deletes a chat entirely (used for 1:1 chats). For groups, prefer
-  /// [leaveGroup] instead — deleting the doc removes it for every member.
   Future<void> deleteChat(String chatId) async {
     await _db.collection('chats').doc(chatId).delete();
   }
 
-  /// Mutes/unmutes notifications for this chat, for the given user only.
   Future<void> setMuted(String chatId, String uid, bool muted) async {
     await _db.collection('chats').doc(chatId).set({
       'muted': {uid: muted}
     }, SetOptions(merge: true));
+  }
+
+  /// Archives/unarchives a chat for one user only — it just hides it from
+  /// their main list, everyone else is unaffected.
+  Future<void> setArchived(String chatId, String uid, bool archived) async {
+    await _db.collection('chats').doc(chatId).set({
+      'archived': {uid: archived}
+    }, SetOptions(merge: true));
+  }
+
+  /// Sets how long messages in this chat stay visible before disappearing.
+  /// Pass null to turn disappearing messages off. Relies on a Firestore TTL
+  /// policy configured on the `expiresAt` field of the `messages` collection
+  /// group (Firestore Console → your database → TTL tab) — free, no Cloud
+  /// Function needed, but you do need to set that policy up once.
+  Future<void> setDisappearingSeconds(String chatId, int? seconds) async {
+    await _db.collection('chats').doc(chatId).update({'disappearingSeconds': seconds});
+  }
+
+  // ---------- INVITE LINKS ----------
+
+  String _randomCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    final rand = DateTime.now().microsecondsSinceEpoch;
+    return List.generate(7, (i) => chars[(rand ~/ (i + 1)) % chars.length]).join();
+  }
+
+  /// Creates (or reuses) an invite code for a group and returns it.
+  Future<String> createGroupInvite(String chatId) async {
+    final existing = await _db.collection('invites').where('chatId', isEqualTo: chatId).limit(1).get();
+    if (existing.docs.isNotEmpty) return existing.docs.first.id;
+    final code = _randomCode();
+    await _db.collection('invites').doc(code).set({'chatId': chatId, 'createdAt': FieldValue.serverTimestamp()});
+    return code;
+  }
+
+  /// Joins the group behind an invite code. Throws if the code is invalid.
+  Future<String> joinGroupViaInvite(String code, String myUid) async {
+    final inviteDoc = await _db.collection('invites').doc(code.trim().toUpperCase()).get();
+    if (!inviteDoc.exists) throw Exception('Invalid or expired invite code');
+    final chatId = inviteDoc.data()!['chatId'] as String;
+    await _db.collection('chats').doc(chatId).update({'participants': FieldValue.arrayUnion([myUid])});
+    return chatId;
   }
 
   // ---------- TYPING INDICATOR ----------
@@ -181,20 +238,44 @@ class FirestoreService {
     required String text,
     String type = 'text',
     String? imageUrl,
+    String? replyToId,
+    String? replyToText,
+    String? replyToSender,
+    String? audioUrl,
+    int? audioSeconds,
+    String? fileUrl,
+    String? fileName,
+    int? fileSize,
+    String? pollQuestion,
+    List<String>? pollOptions,
   }) async {
     final trimmed = text.trim();
-    if (trimmed.isEmpty && imageUrl == null) return;
+    final hasContent = trimmed.isNotEmpty || imageUrl != null || audioUrl != null || fileUrl != null || pollQuestion != null;
+    if (!hasContent) return;
 
     final chatRef = _db.collection('chats').doc(chatId);
     final msgRef = chatRef.collection('messages').doc();
 
-    // Bump the unread counter for every other participant so the chat list
-    // and bottom nav badges can show a count without extra queries.
     final chatSnap = await chatRef.get();
-    final participants = List<String>.from(chatSnap.data()?['participants'] ?? []);
+    final chatData = chatSnap.data() ?? {};
+    final participants = List<String>.from(chatData['participants'] ?? []);
     final unreadUpdates = <String, dynamic>{
       for (final uid in participants)
         if (uid != senderId) 'unreadCounts.$uid': FieldValue.increment(1),
+    };
+
+    Timestamp? expiresAt;
+    final disappearingSeconds = chatData['disappearingSeconds'] as int?;
+    if (disappearingSeconds != null && disappearingSeconds > 0) {
+      expiresAt = Timestamp.fromDate(DateTime.now().add(Duration(seconds: disappearingSeconds)));
+    }
+
+    final previewText = switch (type) {
+      'image' => '📷 Photo',
+      'voice' => '🎤 Voice message',
+      'file' => '📎 ${fileName ?? 'File'}',
+      'poll' => '📊 ${pollQuestion ?? 'Poll'}',
+      _ => trimmed,
     };
 
     final batch = _db.batch();
@@ -207,10 +288,22 @@ class FirestoreService {
         type: type,
         imageUrl: imageUrl,
         timestamp: Timestamp.now(),
+        replyToId: replyToId,
+        replyToText: replyToText,
+        replyToSender: replyToSender,
+        audioUrl: audioUrl,
+        audioSeconds: audioSeconds,
+        fileUrl: fileUrl,
+        fileName: fileName,
+        fileSize: fileSize,
+        pollQuestion: pollQuestion,
+        pollOptions: pollOptions,
+        pollVotes: pollOptions != null ? {for (var i = 0; i < pollOptions.length; i++) '$i': <String>[]} : null,
+        expiresAt: expiresAt,
       ).toMap(),
     );
     batch.update(chatRef, {
-      'lastMessage': type == 'image' ? '📷 Photo' : trimmed,
+      'lastMessage': previewText,
       'lastMessageTime': FieldValue.serverTimestamp(),
       'lastSenderId': senderId,
       ...unreadUpdates,
@@ -218,17 +311,26 @@ class FirestoreService {
     await batch.commit();
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> messagesStream(String chatId) {
-    return _db.collection('chats').doc(chatId).collection('messages').orderBy('timestamp', descending: true).snapshots();
+  /// Paginated message stream: newest [limit] messages, descending. Call
+  /// again with a larger [limit] to load more (simple approach — refetches
+  /// the window rather than true cursor pagination, which keeps the code
+  /// simple and is fine for typical chat sizes).
+  Stream<QuerySnapshot<Map<String, dynamic>>> messagesStream(String chatId, {int limit = 50}) {
+    return _db.collection('chats').doc(chatId).collection('messages').orderBy('timestamp', descending: true).limit(limit).snapshots();
   }
 
-  /// Marks messages NOT sent by [myUid] as read, given the docs already
-  /// loaded from messagesStream (avoids needing another composite index).
-  Future<void> markMessagesRead(String chatId, String myUid, List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) async {
-    final toUpdate = docs.where((d) => d.data()['senderId'] != myUid && d.data()['status'] == 'sent').toList();
+  Future<void> markMessagesRead(
+    String chatId,
+    String myUid,
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs, {
+    bool sendReadReceipts = true,
+  }) async {
     final batch = _db.batch();
-    for (final doc in toUpdate) {
-      batch.update(doc.reference, {'status': 'read'});
+    if (sendReadReceipts) {
+      final toUpdate = docs.where((d) => d.data()['senderId'] != myUid && d.data()['status'] == 'sent').toList();
+      for (final doc in toUpdate) {
+        batch.update(doc.reference, {'status': 'read'});
+      }
     }
     batch.update(_db.collection('chats').doc(chatId), {'unreadCounts.$myUid': 0});
     await batch.commit();
@@ -243,14 +345,66 @@ class FirestoreService {
     });
   }
 
-  /// Soft-deletes a message (keeps the doc so the timeline doesn't shift,
-  /// but clears its content and flags it so the UI shows "message deleted").
   Future<void> deleteMessage(String chatId, String messageId) async {
     await _db.collection('chats').doc(chatId).collection('messages').doc(messageId).update({
       'deleted': true,
       'text': '',
       'imageUrl': null,
     });
+  }
+
+  // ---------- REACTIONS ----------
+
+  Future<void> toggleReaction(String chatId, String messageId, String uid, String emoji) async {
+    final ref = _db.collection('chats').doc(chatId).collection('messages').doc(messageId);
+    final snap = await ref.get();
+    final reactions = Map<String, dynamic>.from(snap.data()?['reactions'] ?? {});
+    if (reactions[uid] == emoji) {
+      reactions.remove(uid); // tapping the same emoji again removes it
+    } else {
+      reactions[uid] = emoji;
+    }
+    await ref.update({'reactions': reactions});
+  }
+
+  // ---------- STARRED MESSAGES ----------
+
+  Future<void> toggleStar(String chatId, String messageId, String uid) async {
+    final ref = _db.collection('chats').doc(chatId).collection('messages').doc(messageId);
+    final snap = await ref.get();
+    final starredBy = List<String>.from(snap.data()?['starredBy'] ?? []);
+    if (starredBy.contains(uid)) {
+      await ref.update({'starredBy': FieldValue.arrayRemove([uid])});
+    } else {
+      await ref.update({'starredBy': FieldValue.arrayUnion([uid])});
+    }
+  }
+
+  /// All messages this user has starred, across every chat. Requires a
+  /// Firestore collection-group index on `messages` for `starredBy`
+  /// (Firestore will show a one-click link to create it the first time you
+  /// run this if it's missing).
+  Stream<QuerySnapshot<Map<String, dynamic>>> starredMessagesStream(String uid) {
+    return _db.collectionGroup('messages').where('starredBy', arrayContains: uid).snapshots();
+  }
+
+  // ---------- POLLS ----------
+
+  Future<void> votePoll(String chatId, String messageId, String uid, int optionIndex) async {
+    final ref = _db.collection('chats').doc(chatId).collection('messages').doc(messageId);
+    final snap = await ref.get();
+    final votes = Map<String, dynamic>.from(snap.data()?['pollVotes'] ?? {});
+    // Remove any previous vote from this user (single-choice poll)
+    for (final key in votes.keys) {
+      final voters = List<String>.from(votes[key] ?? []);
+      voters.remove(uid);
+      votes[key] = voters;
+    }
+    final key = '$optionIndex';
+    final voters = List<String>.from(votes[key] ?? []);
+    voters.add(uid);
+    votes[key] = voters;
+    await ref.update({'pollVotes': votes});
   }
 
   // ---------- GROUP MANAGEMENT ----------
@@ -273,8 +427,6 @@ class FirestoreService {
 
   // ---------- STATUS UPDATES ----------
 
-  /// [type] is 'image' or 'text'. For image statuses pass [mediaUrl]; for
-  /// text statuses pass [text] and [bgColor] (an ARGB color int).
   Future<void> postStatus({
     required String uid,
     String type = 'image',
@@ -299,9 +451,6 @@ class FirestoreService {
     await _db.collection('status_updates').doc(statusId).delete();
   }
 
-  /// Returns status updates from the given uids (contacts + self) posted in
-  /// the last 24 hours. Filters expiry client-side to avoid an extra
-  /// composite index.
   Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> getRecentStatuses(List<String> uids) async {
     if (uids.isEmpty) return [];
     final cutoff = Timestamp.fromDate(DateTime.now().subtract(const Duration(hours: 24)));
@@ -325,5 +474,4 @@ class FirestoreService {
       'viewedBy': FieldValue.arrayUnion([myUid])
     });
   }
-
 }

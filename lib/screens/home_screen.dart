@@ -9,6 +9,7 @@ import '../widgets/glass_container.dart';
 import '../widgets/user_avatar.dart';
 import 'search_screen.dart';
 import 'create_group_screen.dart';
+import 'join_group_screen.dart';
 import 'chat_screen.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
@@ -105,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (_tabIndex == 0) {
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SearchScreen()));
                       } else {
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreateGroupScreen()));
+                        _showGroupMenu(context);
                       }
                     },
                     child: Icon(_tabIndex == 0 ? Icons.person_search_rounded : Icons.group_add_rounded, color: Colors.white),
@@ -176,6 +177,39 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showGroupMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.card))),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: AppSpacing.sm),
+            ListTile(
+              leading: const Icon(Icons.group_add_rounded, color: AppColors.primary),
+              title: const Text('Create a group'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CreateGroupScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.link_rounded, color: AppColors.primary),
+              title: const Text('Join a group'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const JoinGroupScreen()));
+              },
+            ),
+            const SizedBox(height: AppSpacing.sm),
           ],
         ),
       ),
@@ -294,7 +328,9 @@ class _ChatList extends StatelessWidget {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator(color: AppColors.primary));
         }
-        final chats = snapshot.data!.docs.where((d) => (d.data()['isGroup'] == true) == isGroup).toList();
+        final chats = snapshot.data!.docs
+            .where((d) => (d.data()['isGroup'] == true) == isGroup && (d.data()['archived'] as Map<String, dynamic>?)?[myUid] != true)
+            .toList();
 
         if (chats.isEmpty) {
           return Center(
@@ -341,6 +377,14 @@ class _ChatList extends StatelessWidget {
                   onTap: () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => ChatScreen(otherUid: chatDoc.id, displayName: groupName, isGroup: true, groupPhotoUrl: groupPhotoUrl),
                   )),
+                  onLongPress: () => _showChatOptions(
+                    context,
+                    chatId: chatDoc.id,
+                    myUid: myUid,
+                    isArchived: (chat['archived'] as Map<String, dynamic>?)?[myUid] == true,
+                    isMuted: (chat['muted'] as Map<String, dynamic>?)?[myUid] == true,
+                    isGroup: true,
+                  ),
                 ),
               );
             }
@@ -379,6 +423,14 @@ class _ChatList extends StatelessWidget {
                           MaterialPageRoute(
                               builder: (_) => ChatScreen(otherUid: otherUid, displayName: displayName, otherPhotoUrl: otherUser.photoUrl)),
                         ),
+                        onLongPress: () => _showChatOptions(
+                          context,
+                          chatId: chatDoc.id,
+                          myUid: myUid,
+                          isArchived: (chat['archived'] as Map<String, dynamic>?)?[myUid] == true,
+                          isMuted: (chat['muted'] as Map<String, dynamic>?)?[myUid] == true,
+                          isGroup: false,
+                        ),
                       ),
                     );
                   },
@@ -388,6 +440,61 @@ class _ChatList extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  void _showChatOptions(
+    BuildContext context, {
+    required String chatId,
+    required String myUid,
+    required bool isArchived,
+    required bool isMuted,
+    required bool isGroup,
+  }) {
+    final firestoreService = FirestoreService();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.card))),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: AppSpacing.sm),
+            ListTile(
+              leading: Icon(isArchived ? Icons.unarchive_outlined : Icons.archive_outlined, color: AppColors.primary),
+              title: Text(isArchived ? 'Unarchive' : 'Archive'),
+              onTap: () {
+                Navigator.pop(context);
+                firestoreService.setArchived(chatId, myUid, !isArchived);
+              },
+            ),
+            ListTile(
+              leading: Icon(isMuted ? Icons.notifications_off_rounded : Icons.notifications_none_rounded, color: AppColors.primary),
+              title: Text(isMuted ? 'Unmute' : 'Mute'),
+              onTap: () {
+                Navigator.pop(context);
+                firestoreService.setMuted(chatId, myUid, !isMuted);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline_rounded, color: Color(0xFFD64545)),
+              title: Text(isGroup ? 'Leave group' : 'Delete chat', style: const TextStyle(color: Color(0xFFD64545))),
+              onTap: () async {
+                Navigator.pop(context);
+                final confirm = isGroup ? await _confirmLeaveGroup(context) : await _confirmDeleteChat(context);
+                if (confirm != true) return;
+                if (isGroup) {
+                  firestoreService.leaveGroup(chatId, myUid);
+                } else {
+                  firestoreService.deleteChat(chatId);
+                }
+              },
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ),
+      ),
     );
   }
 
@@ -440,6 +547,7 @@ class _ChatRow extends StatelessWidget {
   final int unreadCount;
   final bool muted;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   const _ChatRow({
     required this.displayName,
@@ -448,6 +556,7 @@ class _ChatRow extends StatelessWidget {
     required this.unreadCount,
     required this.muted,
     required this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -456,6 +565,7 @@ class _ChatRow extends StatelessWidget {
     final unread = unreadCount > 0;
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
         child: Row(
