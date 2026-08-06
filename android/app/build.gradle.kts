@@ -8,7 +8,7 @@ plugins {
 }
 android {
     namespace = "com.example.chatapp"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
