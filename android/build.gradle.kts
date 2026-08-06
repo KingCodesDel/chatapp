@@ -16,11 +16,7 @@ subprojects {
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
 
-subprojects {
-    project.evaluationDependsOn(":app")
-}
-
-// Force all plugins to use compileSdk 36
+// Force compileSdk 36 on all plugins — MUST come BEFORE evaluationDependsOn
 subprojects {
     afterEvaluate {
         if (project.hasProperty("android")) {
@@ -30,6 +26,10 @@ subprojects {
             }
         }
     }
+}
+
+subprojects {
+    project.evaluationDependsOn(":app")
 }
 
 tasks.register<Delete>("clean") {
