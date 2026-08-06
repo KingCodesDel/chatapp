@@ -88,6 +88,7 @@ class _ChatScreenState extends State<ChatScreen> {
       final chatId = widget.isGroup ? widget.otherUid : await _firestoreService.getOrCreateChat(myUid, widget.otherUid);
       if (mounted) setState(() => _chatId = chatId);
       if (widget.isGroup) _loadSenderNames(chatId);
+      unawaited(_firestoreService.purgeExpiredMessages(chatId));
     } catch (e) {
       if (mounted) setState(() => _initError = e.toString());
     }

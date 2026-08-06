@@ -345,6 +345,29 @@ class FirestoreService {
     });
   }
 
+  /// Deletes messages in [chatId] whose expiresAt has already passed — a
+  /// client-side fallback for disappearing messages, for when the Firestore
+  /// TTL policy can't be set up (e.g. an IAM permissions issue on the
+  /// Google Cloud project). Safe to call even if a TTL policy IS also
+  /// configured — whichever removes a message first just wins, no conflict.
+  /// Runs whenever a chat is opened, so a chat only gets swept when someone
+  /// actually visits it — not a perfect substitute for server-side TTL, but
+  /// good enough for a personal project.
+  Future<void> purgeExpiredMessages(String chatId) async {
+    final expired = await _db
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .where('expiresAt', isLessThanOrEqualTo: Timestamp.now())
+        .get();
+    if (expired.docs.isEmpty) return;
+    final batch = _db.batch();
+    for (final doc in expired.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+  }
+
   Future<void> deleteMessage(String chatId, String messageId) async {
     await _db.collection('chats').doc(chatId).collection('messages').doc(messageId).update({
       'deleted': true,
