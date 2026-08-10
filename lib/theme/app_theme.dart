@@ -4,9 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 /// Brand colors — stay the same across light/dark, since teal + coral are
 /// the app's identity, not something that should shift with the theme.
 class AppColors {
-  static const primary = Color(0xFF0E7C66);
-  static const primaryDark = Color(0xFF0A5C4C);
-  static const accent = Color(0xFFFF6B4A);
+  static const primary = Color(0xFF6C5CE7);
+  static const primaryDark = Color(0xFF4A2B8C);
+  static const accent = Color(0xFFEC4899);
 
   // Light-mode surfaces
   static const background = Color(0xFFF7F6F3);

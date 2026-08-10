@@ -303,12 +303,20 @@ class _GroupsTab extends StatelessWidget {
   }
 }
 
-class _ChatList extends StatelessWidget {
+class _ChatList extends StatefulWidget {
   final bool isGroup;
   const _ChatList({required this.isGroup});
 
   @override
+  State<_ChatList> createState() => _ChatListState();
+}
+
+class _ChatListState extends State<_ChatList> {
+  bool _unreadOnly = false;
+
+  @override
   Widget build(BuildContext context) {
+    final isGroup = widget.isGroup;
     final authService = AuthService();
     final firestoreService = FirestoreService();
     final myUid = authService.currentUser!.uid;
@@ -328,36 +336,62 @@ class _ChatList extends StatelessWidget {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator(color: AppColors.primary));
         }
-        final chats = snapshot.data!.docs
+        var chats = snapshot.data!.docs
             .where((d) => (d.data()['isGroup'] == true) == isGroup && (d.data()['archived'] as Map<String, dynamic>?)?[myUid] != true)
             .toList();
+        if (_unreadOnly) {
+          chats = chats.where((d) => ((d.data()['unreadCounts'] as Map<String, dynamic>?)?[myUid] as int? ?? 0) > 0).toList();
+        }
+
+        final filterBar = Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.xs, AppSpacing.md, AppSpacing.xs),
+          child: Row(
+            children: [
+              _FilterChip(label: 'All', selected: !_unreadOnly, onTap: () => setState(() => _unreadOnly = false)),
+              const SizedBox(width: 8),
+              _FilterChip(label: 'Unread', selected: _unreadOnly, onTap: () => setState(() => _unreadOnly = true)),
+            ],
+          ),
+        );
 
         if (chats.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(isGroup ? Icons.groups_outlined : Icons.forum_outlined, size: 48, color: AppColorsX.of(context).textSecondary),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(isGroup ? 'No groups yet' : 'No chats yet', style: textTheme.titleLarge),
-                  const SizedBox(height: 4),
-                  Text(isGroup ? 'Tap + to create a group' : 'Tap + to start a chat',
-                      style: textTheme.bodyMedium?.copyWith(color: AppColorsX.of(context).textSecondary), textAlign: TextAlign.center),
-                ],
+          return Column(
+            children: [
+              filterBar,
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(isGroup ? Icons.groups_outlined : Icons.forum_outlined, size: 48, color: AppColorsX.of(context).textSecondary),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(_unreadOnly ? 'No unread chats' : (isGroup ? 'No groups yet' : 'No chats yet'), style: textTheme.titleLarge),
+                        const SizedBox(height: 4),
+                        if (!_unreadOnly)
+                          Text(isGroup ? 'Tap + to create a group' : 'Tap + to start a chat',
+                              style: textTheme.bodyMedium?.copyWith(color: AppColorsX.of(context).textSecondary), textAlign: TextAlign.center),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           );
         }
 
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(0, AppSpacing.xs, 0, 110),
-          itemCount: chats.length,
-          separatorBuilder: (_, __) => const Divider(height: 1, indent: 84),
-          itemBuilder: (context, index) {
-            final chatDoc = chats[index];
-            final chat = chatDoc.data();
+        return Column(
+          children: [
+            filterBar,
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(0, 0, 0, 110),
+                itemCount: chats.length,
+                separatorBuilder: (_, __) => const Divider(height: 1, indent: 84),
+                itemBuilder: (context, index) {
+                  final chatDoc = chats[index];
+                  final chat = chatDoc.data();
 
             if (isGroup) {
               final groupName = chat['groupName'] as String? ?? 'Group';
@@ -438,7 +472,10 @@ class _ChatList extends StatelessWidget {
               },
             );
           },
-        );
+        ),
+      ),
+    ],
+  );
       },
     );
   }
@@ -537,6 +574,38 @@ class _ChatList extends StatelessWidget {
       ),
     );
     return confirm ?? false;
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _FilterChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: selected ? AppColors.primary : AppColors.divider),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : AppColorsX.of(context).textSecondary,
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
+      ),
+    );
   }
 }
 
