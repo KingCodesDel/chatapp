@@ -92,6 +92,11 @@ class FirestoreService {
     return _db.collection('users').doc(myUid).collection('blocked').doc(otherUid).snapshots().map((d) => d.exists);
   }
 
+  /// Every user this person has blocked — powers the Blocked Users screen.
+  Stream<QuerySnapshot<Map<String, dynamic>>> blockedUsersStream(String myUid) {
+    return _db.collection('users').doc(myUid).collection('blocked').snapshots();
+  }
+
   Future<bool> hasBlocked(String uidA, String uidB) async {
     final doc = await _db.collection('users').doc(uidA).collection('blocked').doc(uidB).get();
     return doc.exists;

@@ -24,6 +24,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _tabIndex = 0;
+  bool _searching = false;
+  String _searchQuery = '';
+  final _searchCtrl = TextEditingController();
   final _authService = AuthService();
   final _firestoreService = FirestoreService();
 
@@ -46,24 +49,48 @@ class _HomeScreenState extends State<HomeScreen> {
             blur: 20,
             child: AppBar(
               titleSpacing: 8,
-              title: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
-                    child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                      stream: _firestoreService.userStream(myUid),
-                      builder: (context, snap) {
-                        if (!snap.hasData || !snap.data!.exists) return const SizedBox(width: 34, height: 34);
-                        final me = AppUser.fromMap(snap.data!.data()!);
-                        return UserAvatar(label: me.username, photoUrl: me.photoUrl, size: 34);
-                      },
+              title: _searching
+                  ? TextField(
+                      controller: _searchCtrl,
+                      autofocus: true,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                      decoration: InputDecoration(
+                        hintText: _tabIndex == 1 ? 'Search groups...' : 'Search chats...',
+                        border: InputBorder.none,
+                        filled: false,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      onChanged: (v) => setState(() => _searchQuery = v),
+                    )
+                  : Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
+                          child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                            stream: _firestoreService.userStream(myUid),
+                            builder: (context, snap) {
+                              if (!snap.hasData || !snap.data!.exists) return const SizedBox(width: 34, height: 34);
+                              final me = AppUser.fromMap(snap.data!.data()!);
+                              return UserAvatar(label: me.username, photoUrl: me.photoUrl, size: 34);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(_titles[_tabIndex]),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Text(_titles[_tabIndex]),
-                ],
-              ),
               actions: [
+                if (_tabIndex != 2)
+                  IconButton(
+                    icon: Icon(_searching ? Icons.close_rounded : Icons.search_rounded),
+                    onPressed: () => setState(() {
+                      _searching = !_searching;
+                      if (!_searching) {
+                        _searchCtrl.clear();
+                        _searchQuery = '';
+                      }
+                    }),
+                  ),
                 IconButton(
                   icon: const Icon(Icons.settings_outlined),
                   onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
@@ -85,7 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 bottom: false,
                 child: IndexedStack(
                   index: _tabIndex,
-                  children: const [_ChatsTab(), _GroupsTab(), StatusScreen()],
+                  children: [_ChatsTab(searchQuery: _searchQuery), _GroupsTab(searchQuery: _searchQuery), const StatusScreen()],
                 ),
               ),
             ),
@@ -286,26 +313,29 @@ class _NavItem extends StatelessWidget {
 }
 
 class _ChatsTab extends StatelessWidget {
-  const _ChatsTab();
+  final String searchQuery;
+  const _ChatsTab({required this.searchQuery});
 
   @override
   Widget build(BuildContext context) {
-    return _ChatList(isGroup: false);
+    return _ChatList(isGroup: false, searchQuery: searchQuery);
   }
 }
 
 class _GroupsTab extends StatelessWidget {
-  const _GroupsTab();
+  final String searchQuery;
+  const _GroupsTab({required this.searchQuery});
 
   @override
   Widget build(BuildContext context) {
-    return _ChatList(isGroup: true);
+    return _ChatList(isGroup: true, searchQuery: searchQuery);
   }
 }
 
 class _ChatList extends StatefulWidget {
   final bool isGroup;
-  const _ChatList({required this.isGroup});
+  final String searchQuery;
+  const _ChatList({required this.isGroup, required this.searchQuery});
 
   @override
   State<_ChatList> createState() => _ChatListState();
@@ -396,6 +426,9 @@ class _ChatListState extends State<_ChatList> {
             if (isGroup) {
               final groupName = chat['groupName'] as String? ?? 'Group';
               final groupPhotoUrl = chat['groupPhotoUrl'] as String?;
+              if (widget.searchQuery.isNotEmpty && !groupName.toLowerCase().contains(widget.searchQuery.toLowerCase())) {
+                return const SizedBox.shrink();
+              }
               return Dismissible(
                 key: Key(chatDoc.id),
                 direction: DismissDirection.endToStart,
@@ -439,6 +472,9 @@ class _ChatListState extends State<_ChatList> {
                     if (contactSnap.hasData && contactSnap.data!.exists) {
                       final nickname = contactSnap.data!.data()?['nickname'] as String?;
                       if (nickname != null && nickname.trim().isNotEmpty) displayName = nickname;
+                    }
+                    if (widget.searchQuery.isNotEmpty && !displayName.toLowerCase().contains(widget.searchQuery.toLowerCase())) {
+                      return const SizedBox.shrink();
                     }
 
                     return Dismissible(

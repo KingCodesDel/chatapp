@@ -6,6 +6,7 @@ import '../services/theme_controller.dart';
 import '../theme/app_theme.dart';
 import 'archived_chats_screen.dart';
 import 'starred_messages_screen.dart';
+import 'blocked_users_screen.dart';
 import 'login_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -20,105 +21,138 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.md),
         children: [
-          Text('Appearance', style: textTheme.titleMedium),
           const SizedBox(height: AppSpacing.xs),
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card), side: BorderSide(color: Theme.of(context).dividerColor)),
-            child: ValueListenableBuilder<ThemeMode>(
-              valueListenable: ThemeController.instance.mode,
-              builder: (context, mode, _) {
-                return SwitchListTile(
-                  activeThumbColor: AppColors.primary,
-                  title: const Text('Dark mode'),
-                  subtitle: const Text('Switch between light and dark theme'),
-                  secondary: Icon(mode == ThemeMode.dark ? Icons.dark_mode_rounded : Icons.light_mode_rounded, color: AppColors.primary),
-                  value: mode == ThemeMode.dark,
-                  onChanged: (value) => ThemeController.instance.setDark(value),
-                );
-              },
-            ),
+          _sectionLabel(context, 'Appearance'),
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: ThemeController.instance.mode,
+            builder: (context, mode, _) {
+              return _row(
+                context,
+                icon: mode == ThemeMode.dark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                title: 'Dark Mode',
+                trailing: Switch(activeThumbColor: AppColors.primary, value: mode == ThemeMode.dark, onChanged: (v) => ThemeController.instance.setDark(v)),
+              );
+            },
           ),
-          const SizedBox(height: AppSpacing.lg),
-          Text('Chats', style: textTheme.titleMedium),
-          const SizedBox(height: AppSpacing.xs),
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card), side: BorderSide(color: Theme.of(context).dividerColor)),
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.archive_outlined, color: AppColors.primary),
-                  title: const Text('Archived chats'),
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ArchivedChatsScreen())),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: Icon(Icons.star_outline_rounded, color: Colors.amber.shade700),
-                  title: const Text('Starred messages'),
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StarredMessagesScreen())),
-                ),
-              ],
-            ),
+          const Divider(height: 1),
+          _sectionLabel(context, 'Chats'),
+          _row(
+            context,
+            icon: Icons.archive_outlined,
+            title: 'Archived chats',
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ArchivedChatsScreen())),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          Text('Privacy', style: textTheme.titleMedium),
-          const SizedBox(height: AppSpacing.xs),
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card), side: BorderSide(color: Theme.of(context).dividerColor)),
-            child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-              stream: firestoreService.userStream(myUid),
-              builder: (context, snap) {
-                final data = snap.data?.data();
-                final showLastSeen = data?['showLastSeen'] ?? true;
-                final showReadReceipts = data?['showReadReceipts'] ?? true;
-                return Column(
+          _row(
+            context,
+            icon: Icons.star_outline_rounded,
+            iconColor: Colors.amber.shade700,
+            title: 'Starred messages',
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StarredMessagesScreen())),
+          ),
+          const Divider(height: 1),
+          _sectionLabel(context, 'Privacy & Security'),
+          StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: firestoreService.userStream(myUid),
+            builder: (context, snap) {
+              final data = snap.data?.data();
+              final showLastSeen = data?['showLastSeen'] ?? true;
+              final showReadReceipts = data?['showReadReceipts'] ?? true;
+              return Column(
+                children: [
+                  _row(
+                    context,
+                    icon: Icons.visibility_outlined,
+                    title: 'Show last seen & online status',
+                    subtitle: 'If off, you also won\'t see it for others',
+                    trailing: Switch(activeThumbColor: AppColors.primary, value: showLastSeen, onChanged: (v) => firestoreService.updatePrivacySettings(uid: myUid, showLastSeen: v)),
+                  ),
+                  _row(
+                    context,
+                    icon: Icons.done_all_rounded,
+                    title: 'Send read receipts',
+                    subtitle: 'If off, others won\'t see your double-checks',
+                    trailing: Switch(activeThumbColor: AppColors.primary, value: showReadReceipts, onChanged: (v) => firestoreService.updatePrivacySettings(uid: myUid, showReadReceipts: v)),
+                  ),
+                ],
+              );
+            },
+          ),
+          StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: firestoreService.blockedUsersStream(myUid),
+            builder: (context, snap) {
+              final count = snap.data?.docs.length ?? 0;
+              return _row(
+                context,
+                icon: Icons.block_rounded,
+                iconColor: const Color(0xFFD64545),
+                title: 'Blocked users',
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    SwitchListTile(
-                      activeThumbColor: AppColors.primary,
-                      title: const Text('Show last seen & online status'),
-                      subtitle: const Text('If off, you also won\'t see it for others'),
-                      value: showLastSeen,
-                      onChanged: (v) => firestoreService.updatePrivacySettings(uid: myUid, showLastSeen: v),
-                    ),
-                    const Divider(height: 1),
-                    SwitchListTile(
-                      activeThumbColor: AppColors.primary,
-                      title: const Text('Send read receipts'),
-                      subtitle: const Text('If off, others won\'t see the double-check when you read their messages'),
-                      value: showReadReceipts,
-                      onChanged: (v) => firestoreService.updatePrivacySettings(uid: myUid, showReadReceipts: v),
-                    ),
+                    if (count > 0) Text('$count', style: textTheme.bodyMedium?.copyWith(color: AppColorsX.of(context).textSecondary)),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.chevron_right_rounded),
                   ],
-                );
-              },
-            ),
+                ),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BlockedUsersScreen())),
+              );
+            },
+          ),
+          const Divider(height: 1),
+          const SizedBox(height: AppSpacing.sm),
+          _row(
+            context,
+            icon: Icons.logout_rounded,
+            iconColor: const Color(0xFFD64545),
+            title: 'Log out',
+            titleColor: const Color(0xFFD64545),
+            onTap: () async {
+              await AuthService().signOut();
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false);
+              }
+            },
           ),
           const SizedBox(height: AppSpacing.lg),
-          Text('Account', style: textTheme.titleMedium),
-          const SizedBox(height: AppSpacing.xs),
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card), side: BorderSide(color: Theme.of(context).dividerColor)),
-            child: ListTile(
-              leading: const Icon(Icons.logout_rounded, color: Color(0xFFD64545)),
-              title: const Text('Log out'),
-              onTap: () async {
-                await AuthService().signOut();
-                if (context.mounted) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    (route) => false,
-                  );
-                }
-              },
-            ),
+          Center(
+            child: Text('Chat App v1.0.0', style: textTheme.bodySmall?.copyWith(color: AppColorsX.of(context).textSecondary)),
           ),
+          const SizedBox(height: AppSpacing.lg),
         ],
       ),
+    );
+  }
+
+  Widget _sectionLabel(BuildContext context, String text) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.xs),
+      child: Text(text, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+    );
+  }
+
+  Widget _row(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    Color? iconColor,
+    Color? titleColor,
+    String? subtitle,
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    return ListTile(
+      onTap: onTap,
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(color: (iconColor ?? AppColors.primary).withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+        child: Icon(icon, color: iconColor ?? AppColors.primary, size: 20),
+      ),
+      title: Text(title, style: TextStyle(color: titleColor)),
+      subtitle: subtitle != null ? Text(subtitle, style: const TextStyle(fontSize: 11.5)) : null,
+      trailing: trailing,
     );
   }
 }
