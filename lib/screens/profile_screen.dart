@@ -123,7 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
-              Center(child: Text(user.username, style: textTheme.headlineSmall, textAlign: TextAlign.center)),
+              Center(child: Text(user.name.isNotEmpty ? user.name : user.username, style: textTheme.headlineSmall, textAlign: TextAlign.center)),
               const SizedBox(height: 2),
               Center(child: Text('@${user.username}', style: textTheme.bodyMedium?.copyWith(color: AppColors.primary))),
               if (user.bio.isNotEmpty) ...[
@@ -148,6 +148,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       title: const Text('Settings'),
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const _IconBadge(icon: Icons.help_outline_rounded),
+                      title: const Text('Help & Support'),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Help & Support isn\'t set up yet'))),
                     ),
                   ],
                 ),

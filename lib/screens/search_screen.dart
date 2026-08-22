@@ -79,21 +79,39 @@ class _SearchScreenState extends State<SearchScreen> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 4,
-        title: TextField(
-          controller: _controller,
-          autofocus: true,
-          style: textTheme.bodyLarge,
-          decoration: const InputDecoration(
-            hintText: 'Search by username...',
-            border: InputBorder.none,
-            filled: false,
-            contentPadding: EdgeInsets.zero,
+        title: Container(
+          height: 42,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(color: AppColors.inputFill, borderRadius: BorderRadius.circular(AppRadius.field)),
+          child: Row(
+            children: [
+              Icon(Icons.search_rounded, size: 20, color: AppColors.textSecondary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  autofocus: true,
+                  style: textTheme.bodyLarge,
+                  decoration: const InputDecoration(
+                    hintText: 'Search by username...',
+                    border: InputBorder.none,
+                    filled: false,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  onSubmitted: _search,
+                  onChanged: (v) {
+                    if (v.trim().length >= 2) _search(v);
+                  },
+                ),
+              ),
+            ],
           ),
-          onSubmitted: _search,
-          onChanged: (v) {
-            if (v.trim().length >= 2) _search(v);
-          },
         ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+          const SizedBox(width: 4),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))

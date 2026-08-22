@@ -118,7 +118,7 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           Center(
-            child: Text('Chat App v1.0.0', style: textTheme.bodySmall?.copyWith(color: AppColorsX.of(context).textSecondary)),
+            child: Text('ChatVibe v2.0.1', style: textTheme.bodySmall?.copyWith(color: AppColorsX.of(context).textSecondary)),
           ),
           const SizedBox(height: AppSpacing.lg),
         ],

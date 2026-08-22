@@ -30,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _authService = AuthService();
   final _firestoreService = FirestoreService();
 
-  static const _titles = ['Chats', 'Groups', 'Status'];
+  static const _titles = ['ChatVibe', 'Groups', 'Status'];
   static const double _navHeight = 64;
   static const double _navMargin = AppSpacing.md;
   static const double _navGap = AppSpacing.sm; // gap between nav bar and FAB above it
@@ -76,7 +76,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(width: AppSpacing.sm),
-                        Text(_titles[_tabIndex]),
+                        Text(
+                          _titles[_tabIndex],
+                          style: _tabIndex == 0
+                              ? Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700)
+                              : Theme.of(context).textTheme.headlineSmall,
+                        ),
                       ],
                     ),
               actions: [

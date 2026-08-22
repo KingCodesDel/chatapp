@@ -87,8 +87,11 @@ class MessageBubble extends StatelessWidget {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final receivedColor = isDark ? AppColors.bubbleReceivedDark : AppColors.bubbleReceived;
+    final outgoingColor = isDark ? AppColors.bubbleOutgoingDark : AppColors.bubbleOutgoing;
     final textPrimary = isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
     final showMediaBg = !deleted && _isMedia && imageUrl != null && imageUrl!.isNotEmpty;
+    // Outgoing bubbles use dark text on a light lavender fill (mockup style),
+    // not white-on-solid-purple, so isMe no longer flips the text/icon color.
 
     // Group reactions by emoji -> count, for a compact summary row.
     final reactionCounts = <String, int>{};
@@ -112,7 +115,7 @@ class MessageBubble extends StatelessWidget {
                   child: Text(senderName!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
                 ),
               Container(
-                decoration: BoxDecoration(color: showMediaBg ? Colors.transparent : (isMe ? AppColors.primary : receivedColor), borderRadius: shape),
+                decoration: BoxDecoration(color: showMediaBg ? Colors.transparent : (isMe ? outgoingColor : receivedColor), borderRadius: shape),
                 clipBehavior: Clip.antiAlias,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -147,9 +150,9 @@ class MessageBubble extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.block_rounded, size: 14, color: isMe ? Colors.white70 : AppColors.textSecondary),
+          Icon(Icons.block_rounded, size: 14, color: AppColors.textSecondary),
           const SizedBox(width: 6),
-          Text('Message deleted', style: TextStyle(color: isMe ? Colors.white70 : AppColors.textSecondary, fontStyle: FontStyle.italic, fontSize: 14)),
+          Text('Message deleted', style: TextStyle(color: AppColors.textSecondary, fontStyle: FontStyle.italic, fontSize: 14)),
         ],
       ),
     );
@@ -160,15 +163,15 @@ class MessageBubble extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(10, 10, 10, 0),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: (isMe ? Colors.white : AppColors.primary).withValues(alpha: 0.14),
+        color: AppColors.primary.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(10),
-        border: Border(left: BorderSide(color: isMe ? Colors.white : AppColors.primary, width: 3)),
+        border: Border(left: BorderSide(color: AppColors.primary, width: 3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(replyToSender ?? '', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: isMe ? Colors.white : AppColors.primary)),
-          Text(replyToText ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12.5, color: isMe ? Colors.white70 : textPrimary.withValues(alpha: 0.7))),
+          Text(replyToSender ?? '', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+          Text(replyToText ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12.5, color: textPrimary.withValues(alpha: 0.7))),
         ],
       ),
     );
@@ -202,16 +205,16 @@ class MessageBubble extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.insert_drive_file_rounded, color: isMe ? Colors.white : AppColors.primary, size: 28),
+                Icon(Icons.insert_drive_file_rounded, color: AppColors.primary, size: 28),
                 const SizedBox(width: 10),
                 Flexible(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(fileName ?? 'File', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: isMe ? Colors.white : textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+                      Text(fileName ?? 'File', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
                       if (fileSize != null)
-                        Text(_formatSize(fileSize!), style: TextStyle(color: isMe ? Colors.white70 : AppColors.textSecondary, fontSize: 11.5)),
+                        Text(_formatSize(fileSize!), style: TextStyle(color: AppColors.textSecondary, fontSize: 11.5)),
                     ],
                   ),
                 ),
@@ -230,8 +233,8 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _linkedText(String value, bool isMe, Color textPrimary) {
-    final baseStyle = TextStyle(color: isMe ? Colors.white : textPrimary, fontSize: 15, height: 1.35);
-    final linkStyle = baseStyle.copyWith(color: isMe ? Colors.white : AppColors.primary, decoration: TextDecoration.underline);
+    final baseStyle = TextStyle(color: textPrimary, fontSize: 15, height: 1.35);
+    final linkStyle = baseStyle.copyWith(color: AppColors.primary, decoration: TextDecoration.underline);
     final spans = <InlineSpan>[];
     var last = 0;
     for (final match in _urlPattern.allMatches(value)) {
@@ -246,7 +249,7 @@ class MessageBubble extends StatelessWidget {
     }
     if (last < value.length) spans.add(TextSpan(text: value.substring(last), style: baseStyle));
     if (edited) {
-      spans.add(TextSpan(text: '  (edited)', style: TextStyle(color: isMe ? Colors.white70 : AppColors.textSecondary, fontSize: 11, fontStyle: FontStyle.italic)));
+      spans.add(TextSpan(text: '  (edited)', style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontStyle: FontStyle.italic)));
     }
     return RichText(text: TextSpan(children: spans));
   }
@@ -261,14 +264,14 @@ class MessageBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(pollQuestion ?? '', style: TextStyle(color: isMe ? Colors.white : textPrimary, fontSize: 15, fontWeight: FontWeight.w700)),
+          Text(pollQuestion ?? '', style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           for (var i = 0; i < options.length; i++) ...[
             _pollOption(i, options[i], votes['$i'] ?? [], totalVotes, isMe),
             const SizedBox(height: 6),
           ],
           if (totalVotes > 0)
-            Text('$totalVotes vote${totalVotes == 1 ? '' : 's'}', style: TextStyle(color: isMe ? Colors.white70 : AppColors.textSecondary, fontSize: 11.5)),
+            Text('$totalVotes vote${totalVotes == 1 ? '' : 's'}', style: TextStyle(color: AppColors.textSecondary, fontSize: 11.5)),
         ],
       ),
     );
@@ -277,8 +280,8 @@ class MessageBubble extends StatelessWidget {
   Widget _pollOption(int index, String label, List<String> voters, int totalVotes, bool isMe) {
     final pct = totalVotes == 0 ? 0.0 : voters.length / totalVotes;
     final votedByMe = voters.contains(currentUid);
-    final fillColor = isMe ? Colors.white.withValues(alpha: 0.28) : AppColors.primary.withValues(alpha: 0.18);
-    final baseColor = isMe ? Colors.white.withValues(alpha: 0.14) : AppColors.divider;
+    final fillColor = AppColors.primary.withValues(alpha: 0.18);
+    final baseColor = AppColors.divider;
 
     return InkWell(
       onTap: onVote == null ? null : () => onVote!(index),
@@ -300,10 +303,10 @@ class MessageBubble extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Row(
                 children: [
-                  if (votedByMe) Icon(Icons.check_circle_rounded, size: 14, color: isMe ? Colors.white : AppColors.primary),
+                  if (votedByMe) Icon(Icons.check_circle_rounded, size: 14, color: AppColors.primary),
                   if (votedByMe) const SizedBox(width: 5),
-                  Expanded(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: isMe ? Colors.white : AppColors.textPrimary, fontSize: 13))),
-                  if (totalVotes > 0) Text('${(pct * 100).round()}%', style: TextStyle(color: isMe ? Colors.white70 : AppColors.textSecondary, fontSize: 11.5)),
+                  Expanded(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppColors.textPrimary, fontSize: 13))),
+                  if (totalVotes > 0) Text('${(pct * 100).round()}%', style: TextStyle(color: AppColors.textSecondary, fontSize: 11.5)),
                 ],
               ),
             ),
@@ -319,7 +322,7 @@ class MessageBubble extends StatelessWidget {
       child: Icon(
         status == 'read' ? Icons.done_all_rounded : Icons.done_rounded,
         size: 14,
-        color: status == 'read' ? (showMediaBg ? AppColors.primary : Colors.white) : (showMediaBg ? AppColors.textSecondary : Colors.white70),
+        color: status == 'read' ? AppColors.primary : AppColors.textSecondary,
       ),
     );
   }
@@ -406,7 +409,7 @@ class _VoiceBubbleContentState extends State<_VoiceBubbleContent> {
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.isMe ? Colors.white : AppColors.primary;
+    final color = AppColors.primary;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -421,7 +424,7 @@ class _VoiceBubbleContentState extends State<_VoiceBubbleContent> {
         ),
         const SizedBox(width: 8),
         Text(_fmt(_playing || _position.inSeconds > 0 ? _position : (_duration ?? Duration.zero)),
-            style: TextStyle(color: widget.isMe ? Colors.white : AppColors.textPrimary, fontSize: 13)),
+            style: TextStyle(color: AppColors.textPrimary, fontSize: 13)),
       ],
     );
   }

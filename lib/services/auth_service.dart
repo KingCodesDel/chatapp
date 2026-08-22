@@ -14,6 +14,7 @@ class AuthService {
     required String email,
     required String password,
     required String username,
+    String name = '',
   }) async {
     final usernameLower = username.trim().toLowerCase();
 
@@ -42,6 +43,7 @@ class AuthService {
     batch.set(_db.collection('users').doc(uid), {
       'uid': uid,
       'email': email.trim(),
+      'name': name.trim(),
       'username': username.trim(),
       'username_lower': usernameLower,
       'photoUrl': '',

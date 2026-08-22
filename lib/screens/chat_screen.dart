@@ -423,6 +423,19 @@ class _ChatScreenState extends State<ChatScreen> {
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report submitted')));
   }
 
+  String _presenceText(Map<String, dynamic>? data) {
+    if (data == null) return '';
+    if (data['showLastSeen'] == false) return '';
+    if (data['online'] == true) return 'Online';
+    final lastSeen = data['lastSeen'];
+    if (lastSeen is! Timestamp) return '';
+    final diff = DateTime.now().difference(lastSeen.toDate());
+    if (diff.inMinutes < 1) return 'Last seen just now';
+    if (diff.inHours < 1) return 'Last seen ${diff.inMinutes}m ago';
+    if (diff.inDays < 1) return 'Last seen ${diff.inHours}h ago';
+    return 'Last seen ${diff.inDays}d ago';
+  }
+
   @override
   Widget build(BuildContext context) {
     final myUid = _authService.currentUser!.uid;
@@ -461,17 +474,31 @@ class _ChatScreenState extends State<ChatScreen> {
                               builder: (context, snap) {
                                 final data = snap.data?.data();
                                 final typing = data?['typing'] as Map<String, dynamic>?;
-                                if (typing == null) return const SizedBox.shrink();
-                                if (!widget.isGroup) {
-                                  final otherTyping = typing[widget.otherUid] == true;
-                                  if (!otherTyping) return const SizedBox.shrink();
-                                  return Text('typing...', style: textTheme.bodySmall?.copyWith(color: AppColors.primary));
+                                String? typingLabel;
+                                if (typing != null) {
+                                  if (!widget.isGroup) {
+                                    if (typing[widget.otherUid] == true) typingLabel = 'typing...';
+                                  } else {
+                                    final typingUids = typing.entries.where((e) => e.value == true && e.key != myUid).map((e) => e.key).toList();
+                                    if (typingUids.isNotEmpty) {
+                                      final names = typingUids.map((u) => _senderNames[u] ?? '...').toList();
+                                      typingLabel = names.length == 1 ? '${names[0]} is typing...' : '${names.join(', ')} are typing...';
+                                    }
+                                  }
                                 }
-                                final typingUids = typing.entries.where((e) => e.value == true && e.key != myUid).map((e) => e.key).toList();
-                                if (typingUids.isEmpty) return const SizedBox.shrink();
-                                final names = typingUids.map((u) => _senderNames[u] ?? '...').toList();
-                                final label = names.length == 1 ? '${names[0]} is typing...' : '${names.join(', ')} are typing...';
-                                return Text(label, style: textTheme.bodySmall?.copyWith(color: AppColors.primary), overflow: TextOverflow.ellipsis);
+                                if (typingLabel != null) {
+                                  return Text(typingLabel, style: textTheme.bodySmall?.copyWith(color: AppColors.primary), overflow: TextOverflow.ellipsis);
+                                }
+                                if (widget.isGroup) return const SizedBox.shrink();
+                                // Not typing — fall back to online/last-seen presence, like the mockup's chat header.
+                                return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                                  stream: _firestoreService.userStream(widget.otherUid),
+                                  builder: (context, userSnap) {
+                                    final presence = _presenceText(userSnap.data?.data());
+                                    if (presence.isEmpty) return const SizedBox.shrink();
+                                    return Text(presence, style: textTheme.bodySmall?.copyWith(color: AppColors.textSecondary));
+                                  },
+                                );
                               },
                             ),
                         ],

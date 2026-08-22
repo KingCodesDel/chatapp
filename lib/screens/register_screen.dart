@@ -11,12 +11,14 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _usernameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _authService = AuthService();
 
   bool _loading = false;
+  bool _obscure = true;
   String? _error;
 
   Future<void> _register() async {
@@ -30,6 +32,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email: _emailCtrl.text,
         password: _passwordCtrl.text,
         username: _usernameCtrl.text,
+        name: _nameCtrl.text,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -44,11 +47,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _usernameCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Create account')),
+      appBar: AppBar(leading: const BackButton()),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -56,50 +68,64 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Form(
               key: _formKey,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Set up your profile', style: textTheme.headlineSmall),
-                  const SizedBox(height: 4),
-                  Text('Your username is how people will find you to chat',
-                      style: textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary)),
+                  Text('Create Account', style: textTheme.displaySmall, textAlign: TextAlign.center),
+                  const SizedBox(height: 6),
+                  Text('Join millions of users', style: textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary)),
                   const SizedBox(height: AppSpacing.lg),
                   TextFormField(
-                    controller: _emailCtrl,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(labelText: 'Email'),
-                    validator: (v) => (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
+                    controller: _nameCtrl,
+                    decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person_outline_rounded)),
+                    validator: (v) => (v == null || v.trim().length < 2) ? 'Enter your name' : null,
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   TextFormField(
                     controller: _usernameCtrl,
-                    decoration: const InputDecoration(labelText: 'Username', helperText: 'Must be unique — no spaces'),
-                    validator: (v) => (v == null || v.trim().length < 3) ? 'Min 3 characters' : null,
+                    decoration: const InputDecoration(labelText: 'Username', prefixIcon: Icon(Icons.alternate_email_rounded)),
+                    validator: (v) => (v == null || v.trim().length < 3) ? 'Min 3 characters, no spaces' : null,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  TextFormField(
+                    controller: _emailCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.mail_outline_rounded)),
+                    validator: (v) => (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   TextFormField(
                     controller: _passwordCtrl,
-                    obscureText: true,
-                    decoration: const InputDecoration(labelText: 'Password'),
+                    obscureText: _obscure,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      prefixIcon: const Icon(Icons.lock_outline_rounded),
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: AppColors.textSecondary),
+                        onPressed: () => setState(() => _obscure = !_obscure),
+                      ),
+                    ),
                     validator: (v) => (v == null || v.length < 6) ? 'Min 6 characters' : null,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   if (_error != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: Text(_error!, style: const TextStyle(color: Color(0xFFD64545), fontSize: 13)),
+                      child: Text(_error!, style: const TextStyle(color: Color(0xFFE85C5C), fontSize: 13), textAlign: TextAlign.center),
                     ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _loading ? null : _register,
-                      child: _loading
-                          ? const SizedBox(
-                              height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Text('Create account'),
+                  GradientButton(label: 'Sign Up', loading: _loading, onPressed: _loading ? null : _register),
+                  const SizedBox(height: AppSpacing.md),
+                  Text.rich(
+                    TextSpan(
+                      style: textTheme.bodySmall,
+                      children: const [
+                        TextSpan(text: 'By signing up, you agree to our '),
+                        TextSpan(text: 'Terms & Privacy Policy', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+                      ],
                     ),
+                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.md),
                 ],
               ),
             ),

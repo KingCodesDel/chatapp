@@ -99,7 +99,7 @@ class _StatusScreenState extends State<StatusScreen> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Status')),
+      appBar: AppBar(title: const Text('Updates')),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _firestoreService.contactsStream(myUid),
         builder: (context, contactsSnap) {
@@ -140,8 +140,8 @@ class _StatusScreenState extends State<StatusScreen> {
                         ),
                       ],
                     ),
-                    title: Text('My status', style: textTheme.titleMedium),
-                    subtitle: Text(myStatuses.isEmpty ? 'Tap to add a status update' : '${myStatuses.length} update(s) · tap to view'),
+                    title: Text('My Status', style: textTheme.titleMedium),
+                    subtitle: Text(myStatuses.isEmpty ? 'Tap to add status' : '${myStatuses.length} update(s) · tap to view'),
                     onTap: myStatuses.isEmpty
                         ? (_posting ? null : _choosePostType)
                         : () => _openViewer(context, myStatuses, 'Me', isOwn: true),
@@ -153,7 +153,7 @@ class _StatusScreenState extends State<StatusScreen> {
                     const Divider(height: 1),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.xs),
-                      child: Text('Recent updates', style: textTheme.bodySmall),
+                      child: Text('Recent Updates', style: textTheme.titleMedium),
                     ),
                     ...byUid.entries.map((entry) => FutureBuilder<AppUser?>(
                           future: _firestoreService.getUser(entry.key),
