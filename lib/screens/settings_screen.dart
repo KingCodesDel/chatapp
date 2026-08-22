@@ -23,6 +23,15 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         children: [
           const SizedBox(height: AppSpacing.xs),
+          _sectionLabel(context, 'General'),
+          _row(
+            context,
+            icon: Icons.notifications_outlined,
+            title: 'Notifications & Sounds',
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notification settings aren\'t set up yet'))),
+          ),
+          const Divider(height: 1),
           _sectionLabel(context, 'Appearance'),
           ValueListenableBuilder<ThemeMode>(
             valueListenable: ThemeController.instance.mode,
@@ -100,6 +109,15 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BlockedUsersScreen())),
               );
             },
+          ),
+          const Divider(height: 1),
+          _row(
+            context,
+            icon: Icons.flag_outlined,
+            iconColor: const Color(0xFFD64545),
+            title: 'Report a problem',
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reporting isn\'t set up yet'))),
           ),
           const Divider(height: 1),
           const SizedBox(height: AppSpacing.sm),

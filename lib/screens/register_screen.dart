@@ -62,16 +62,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       appBar: AppBar(leading: const BackButton()),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Create Account', style: textTheme.displaySmall, textAlign: TextAlign.center),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: AppSpacing.xl),
+                Text('Create Account', style: textTheme.displaySmall, textAlign: TextAlign.center),
                   const SizedBox(height: 6),
                   Text('Join millions of users', style: textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary)),
                   const SizedBox(height: AppSpacing.lg),
@@ -131,7 +131,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
         ),
-      ),
     );
   }
 }

@@ -53,6 +53,22 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _googleSignIn() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      await _authService.signInWithGoogle();
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
+    } catch (e) {
+      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   void _socialComingSoon(String provider) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$provider sign-in isn\'t set up yet — use email for now')));
   }
@@ -70,16 +86,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: AppSpacing.lg),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: AppSpacing.xl * 2),
                   Container(
                     width: 64,
                     height: 64,
@@ -140,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _SocialButton(icon: Icons.g_mobiledata_rounded, onTap: () => _socialComingSoon('Google')),
+                      _SocialButton(icon: Icons.g_mobiledata_rounded, onTap: _loading ? () {} : _googleSignIn),
                       const SizedBox(width: 16),
                       _SocialButton(icon: Icons.apple_rounded, onTap: () => _socialComingSoon('Apple')),
                       const SizedBox(width: 16),
@@ -164,7 +179,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
-      ),
     );
   }
 }

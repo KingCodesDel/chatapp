@@ -23,17 +23,17 @@ class StatusScreen extends StatefulWidget {
   const StatusScreen({super.key});
 
   @override
-  State<StatusScreen> createState() => _StatusScreenState();
+  State<StatusScreen> createState() => StatusScreenState();
 }
 
-class _StatusScreenState extends State<StatusScreen> {
+class StatusScreenState extends State<StatusScreen> {
   final _firestoreService = FirestoreService();
   final _authService = AuthService();
   final _storageService = StorageService();
   final _picker = ImagePicker();
   bool _posting = false;
 
-  Future<void> _choosePostType() async {
+  Future<void> choosePostType() async {
     final choice = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -98,9 +98,10 @@ class _StatusScreenState extends State<StatusScreen> {
     final myUid = _authService.currentUser!.uid;
     final textTheme = Theme.of(context).textTheme;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Updates')),
-      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+    // No own Scaffold/AppBar here — this widget is only ever embedded as the
+    // Status/Updates tab inside HomeScreen, which owns the header (title +
+    // camera/edit actions) to avoid a duplicated toolbar.
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _firestoreService.contactsStream(myUid),
         builder: (context, contactsSnap) {
           final contactUids = contactsSnap.data?.docs.map((d) => d.data()['contactUid'] as String).toList() ?? [];
@@ -143,11 +144,11 @@ class _StatusScreenState extends State<StatusScreen> {
                     title: Text('My Status', style: textTheme.titleMedium),
                     subtitle: Text(myStatuses.isEmpty ? 'Tap to add status' : '${myStatuses.length} update(s) · tap to view'),
                     onTap: myStatuses.isEmpty
-                        ? (_posting ? null : _choosePostType)
+                        ? (_posting ? null : choosePostType)
                         : () => _openViewer(context, myStatuses, 'Me', isOwn: true),
                     trailing: myStatuses.isEmpty
                         ? null
-                        : IconButton(icon: const Icon(Icons.add, color: AppColors.primary), onPressed: _posting ? null : _choosePostType),
+                        : IconButton(icon: const Icon(Icons.add, color: AppColors.primary), onPressed: _posting ? null : choosePostType),
                   ),
                   if (byUid.isNotEmpty) ...[
                     const Divider(height: 1),
@@ -186,8 +187,7 @@ class _StatusScreenState extends State<StatusScreen> {
             },
           );
         },
-      ),
-    );
+      );
   }
 
   void _openViewer(BuildContext context, List<QueryDocumentSnapshot<Map<String, dynamic>>> statuses, String name, {required bool isOwn}) async {

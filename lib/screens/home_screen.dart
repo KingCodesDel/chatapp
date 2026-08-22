@@ -29,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _searchCtrl = TextEditingController();
   final _authService = AuthService();
   final _firestoreService = FirestoreService();
+  final _statusKey = GlobalKey<StatusScreenState>();
 
   static const _titles = ['ChatVibe', 'Groups', 'Status'];
   static const double _navHeight = 64;
@@ -62,46 +63,59 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       onChanged: (v) => setState(() => _searchQuery = v),
                     )
-                  : Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
-                          child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                            stream: _firestoreService.userStream(myUid),
-                            builder: (context, snap) {
-                              if (!snap.hasData || !snap.data!.exists) return const SizedBox(width: 34, height: 34);
-                              final me = AppUser.fromMap(snap.data!.data()!);
-                              return UserAvatar(label: me.username, photoUrl: me.photoUrl, size: 34);
-                            },
-                          ),
+                  : _tabIndex == 2
+                      ? Text('Updates', style: Theme.of(context).textTheme.headlineSmall)
+                      : Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
+                              child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                                stream: _firestoreService.userStream(myUid),
+                                builder: (context, snap) {
+                                  if (!snap.hasData || !snap.data!.exists) return const SizedBox(width: 34, height: 34);
+                                  final me = AppUser.fromMap(snap.data!.data()!);
+                                  return UserAvatar(label: me.username, photoUrl: me.photoUrl, size: 34);
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Text(
+                              _titles[_tabIndex],
+                              style: _tabIndex == 0
+                                  ? Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700)
+                                  : Theme.of(context).textTheme.headlineSmall,
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Text(
-                          _titles[_tabIndex],
-                          style: _tabIndex == 0
-                              ? Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700)
-                              : Theme.of(context).textTheme.headlineSmall,
-                        ),
-                      ],
-                    ),
-              actions: [
-                if (_tabIndex != 2)
-                  IconButton(
-                    icon: Icon(_searching ? Icons.close_rounded : Icons.search_rounded),
-                    onPressed: () => setState(() {
-                      _searching = !_searching;
-                      if (!_searching) {
-                        _searchCtrl.clear();
-                        _searchQuery = '';
-                      }
-                    }),
-                  ),
-                IconButton(
-                  icon: const Icon(Icons.settings_outlined),
-                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
-                ),
-                const SizedBox(width: 4),
-              ],
+              actions: _tabIndex == 2
+                  ? [
+                      IconButton(
+                        icon: const Icon(Icons.camera_alt_outlined),
+                        onPressed: () => _statusKey.currentState?.choosePostType(),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        onPressed: () => _statusKey.currentState?.choosePostType(),
+                      ),
+                      const SizedBox(width: 4),
+                    ]
+                  : [
+                      IconButton(
+                        icon: Icon(_searching ? Icons.close_rounded : Icons.search_rounded),
+                        onPressed: () => setState(() {
+                          _searching = !_searching;
+                          if (!_searching) {
+                            _searchCtrl.clear();
+                            _searchQuery = '';
+                          }
+                        }),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.settings_outlined),
+                        onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                      ),
+                      const SizedBox(width: 4),
+                    ],
             ),
           ),
         ),
@@ -117,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 bottom: false,
                 child: IndexedStack(
                   index: _tabIndex,
-                  children: [_ChatsTab(searchQuery: _searchQuery), _GroupsTab(searchQuery: _searchQuery), const StatusScreen()],
+                  children: [_ChatsTab(searchQuery: _searchQuery), _GroupsTab(searchQuery: _searchQuery), StatusScreen(key: _statusKey)],
                 ),
               ),
             ),
