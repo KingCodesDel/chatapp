@@ -7,12 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:964054090271:android:eef8d2edceec865be7cb2a",
+        "mobilesdk_app_id": "1:964054090271:android:b0b8cddbd269b269e7cb2a",
         "android_client_info": {
-          "package_name": "com.example.chatapp"
+          "package_name": "com.cloudnest.chatvibe101"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "964054090271-vh3ot3db28ob3mhhui3o0g2imr0gb64b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBcV-btr--FqtEW_ObKnBRuco8Xf4Ax4-U"
@@ -20,7 +25,63 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "964054090271-vh3ot3db28ob3mhhui3o0g2imr0gb64b.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "964054090271-rtm3s3uk0ptsiu407ga08ku7h112r4fm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.chatapp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:964054090271:android:eef8d2edceec865be7cb2a",
+        "android_client_info": {
+          "package_name": "com.example.chatapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "964054090271-pb861a72blih96hbdrjrqd7uajtik8mj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.chatapp",
+            "certificate_hash": "d127b61cd837718f44715610332055a241799907"
+          }
+        },
+        {
+          "client_id": "964054090271-vh3ot3db28ob3mhhui3o0g2imr0gb64b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBcV-btr--FqtEW_ObKnBRuco8Xf4Ax4-U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "964054090271-vh3ot3db28ob3mhhui3o0g2imr0gb64b.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "964054090271-rtm3s3uk0ptsiu407ga08ku7h112r4fm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.chatapp"
+              }
+            }
+          ]
         }
       }
     }
