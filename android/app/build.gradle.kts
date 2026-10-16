@@ -7,7 +7,7 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 android {
-    namespace = "com.example.chatapp"
+    namespace = "com.cloudnest.chatvibe101"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
     compileOptions {
