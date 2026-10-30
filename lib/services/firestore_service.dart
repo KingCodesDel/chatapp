@@ -253,6 +253,7 @@ class FirestoreService {
     int? fileSize,
     String? pollQuestion,
     List<String>? pollOptions,
+    bool forwarded = false,
   }) async {
     final trimmed = text.trim();
     final hasContent = trimmed.isNotEmpty || imageUrl != null || audioUrl != null || fileUrl != null || pollQuestion != null;
@@ -305,6 +306,7 @@ class FirestoreService {
         pollOptions: pollOptions,
         pollVotes: pollOptions != null ? {for (var i = 0; i < pollOptions.length; i++) '$i': <String>[]} : null,
         expiresAt: expiresAt,
+        forwarded: forwarded,
       ).toMap(),
     );
     batch.update(chatRef, {
@@ -498,8 +500,15 @@ class FirestoreService {
   }
 
   Future<void> markStatusViewed(String statusId, String myUid) async {
+    // viewedBy keeps the simple uid list the rest of the app already uses;
+    // viewedAt.<uid> adds the time, so the owner can see when each person looked.
     await _db.collection('status_updates').doc(statusId).update({
-      'viewedBy': FieldValue.arrayUnion([myUid])
+      'viewedBy': FieldValue.arrayUnion([myUid]),
+      'viewedAt.$myUid': FieldValue.serverTimestamp(),
     });
+  }
+
+  Stream<DocumentSnapshot<Map<String, dynamic>>> statusStream(String statusId) {
+    return _db.collection('status_updates').doc(statusId).snapshots();
   }
 }

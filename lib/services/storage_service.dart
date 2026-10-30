@@ -51,6 +51,9 @@ class StorageService {
   Future<String> uploadStatusImage(String uid, File file) =>
       _upload(file, 'status_updates/$uid');
 
+  Future<String> uploadChannelImage(File file) =>
+      _upload(file, 'channel_posts');
+
   Future<String> uploadVoiceMessage(String chatId, File file) =>
       _upload(file, 'voice_messages/$chatId', resourceType: 'video');
 
