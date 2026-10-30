@@ -27,6 +27,7 @@ class Message {
   final List<String>? pollOptions;
   final Map<String, List<String>>? pollVotes; // optionIndex(as string) -> [uids]
   final Timestamp? expiresAt;
+  final bool forwarded;
 
   Message({
     required this.id,
@@ -52,6 +53,7 @@ class Message {
     this.pollOptions,
     this.pollVotes,
     this.expiresAt,
+    this.forwarded = false,
   });
 
   factory Message.fromMap(String id, Map<String, dynamic> map) {
@@ -81,6 +83,7 @@ class Message {
           ? (map['pollVotes'] as Map).map((k, v) => MapEntry(k.toString(), List<String>.from(v)))
           : null,
       expiresAt: map['expiresAt'],
+      forwarded: map['forwarded'] == true,
     );
   }
 
@@ -108,6 +111,7 @@ class Message {
       'pollOptions': pollOptions,
       'pollVotes': pollVotes,
       if (expiresAt != null) 'expiresAt': expiresAt,
+      if (forwarded) 'forwarded': true,
     };
   }
 }
