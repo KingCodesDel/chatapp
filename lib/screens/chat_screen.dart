@@ -11,11 +11,14 @@ import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/time_format.dart';
+import '../widgets/date_chip.dart';
 import '../widgets/app_backdrop.dart';
 import '../widgets/glass_container.dart';
 import '../widgets/user_avatar.dart';
 import '../widgets/message_bubble.dart';
 import 'contact_profile_screen.dart';
+import 'forward_picker_screen.dart';
 import 'group_info_screen.dart';
 import 'image_viewer_screen.dart';
 
@@ -306,7 +309,42 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  void _showMessageOptions(String messageId, String currentText, String type, bool isStarred) {
+  Future<void> _forwardMessage(Map<String, dynamic> data) async {
+    final type = (data['type'] ?? 'text') as String;
+    if (type == 'poll') {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Polls can't be forwarded")));
+      return;
+    }
+    final targets = await Navigator.of(context).push<List<String>>(
+      MaterialPageRoute(builder: (_) => ForwardPickerScreen(excludeChatId: _chatId)),
+    );
+    if (targets == null || targets.isEmpty) return;
+    final myUid = _authService.currentUser!.uid;
+    try {
+      for (final chatId in targets) {
+        await _firestoreService.sendMessage(
+          chatId: chatId,
+          senderId: myUid,
+          text: data['text'] ?? '',
+          type: type,
+          imageUrl: data['imageUrl'],
+          audioUrl: data['audioUrl'],
+          audioSeconds: data['audioSeconds'],
+          fileUrl: data['fileUrl'],
+          fileName: data['fileName'],
+          fileSize: data['fileSize'],
+          forwarded: true,
+        );
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Forwarded to ${targets.length} chat${targets.length == 1 ? '' : 's'}')));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not forward: $e')));
+    }
+  }
+
+  void _showMessageOptions(String messageId, String currentText, String type, bool isStarred, Map<String, dynamic> data) {
     final myUid = _authService.currentUser!.uid;
     showModalBottomSheet(
       context: context,
@@ -339,6 +377,14 @@ class _ChatScreenState extends State<ChatScreen> {
               onTap: () {
                 Navigator.pop(context);
                 setState(() => _replyingTo = {'id': messageId, 'text': currentText, 'sender': 'You'});
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.forward_rounded, color: AppColors.primary),
+              title: const Text('Forward'),
+              onTap: () {
+                Navigator.pop(context);
+                _forwardMessage(data);
               },
             ),
             if (type == 'text')
@@ -605,7 +651,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                 final reactions = Map<String, String>.from(data['reactions'] ?? {});
                                 final pollVotesRaw = data['pollVotes'] as Map?;
 
-                                return MessageBubble(
+                                final sentAt = TimeFormat.fromTs(data['timestamp']);
+                                final bubble = MessageBubble(
                                   text: data['text'] ?? '',
                                   isMe: isMe,
                                   type: type,
@@ -614,6 +661,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                   edited: data['edited'] == true,
                                   deleted: deleted,
                                   senderName: widget.isGroup ? _senderNames[data['senderId']] : null,
+                                  time: sentAt,
+                                  forwarded: data['forwarded'] == true,
                                   replyToText: data['replyToText'],
                                   replyToSender: data['replyToSender'],
                                   reactions: reactions,
@@ -629,7 +678,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   pollOptions: data['pollOptions'] != null ? List<String>.from(data['pollOptions']) : null,
                                   pollVotes: pollVotesRaw?.map((k, v) => MapEntry(k.toString(), List<String>.from(v))),
                                   onVote: type == 'poll' ? (i) => _firestoreService.votePoll(_chatId!, doc.id, myUid, i) : null,
-                                  onLongPress: !deleted ? () => _showMessageOptions(doc.id, data['text'] ?? '', type, starredBy.contains(myUid)) : null,
+                                  onLongPress: !deleted ? () => _showMessageOptions(doc.id, data['text'] ?? '', type, starredBy.contains(myUid), data) : null,
                                   onImageTap: (type == 'image' && data['imageUrl'] != null && !deleted)
                                       ? () {
                                           final urls = imageMessages.map((d) => d.data()['imageUrl'] as String).toList();
@@ -638,6 +687,23 @@ class _ChatScreenState extends State<ChatScreen> {
                                               builder: (_) => ImageViewerScreen(imageUrls: urls, initialIndex: tapIndex < 0 ? 0 : tapIndex)));
                                         }
                                       : null,
+                                );
+
+                                // Date divider: show a chip above this message when the
+                                // next-older message is from a different day (the list is
+                                // reversed, so "older" is the next index).
+                                final olderIndex = msgIndex + 1;
+                                final bool showDate;
+                                if (olderIndex < messages.length) {
+                                  final olderAt = TimeFormat.fromTs(messages[olderIndex].data()['timestamp']);
+                                  showDate = olderAt != null && !TimeFormat.sameDay(olderAt, sentAt ?? DateTime.now());
+                                } else {
+                                  showDate = !canLoadMore; // oldest message in the whole chat
+                                }
+                                if (!showDate) return bubble;
+                                return Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [DateChip(label: TimeFormat.dayLabel(sentAt ?? DateTime.now())), bubble],
                                 );
                               },
                             );

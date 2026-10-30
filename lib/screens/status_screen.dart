@@ -7,6 +7,8 @@ import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/time_format.dart';
+import 'channel_screen.dart';
 import '../widgets/user_avatar.dart';
 
 const _statusColors = [
@@ -124,6 +126,8 @@ class StatusScreenState extends State<StatusScreen> {
               return ListView(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 children: [
+                  const ChannelTile(),
+                  const Divider(height: 1),
                   ListTile(
                     leading: Stack(
                       children: [
@@ -301,7 +305,24 @@ class _StatusViewerState extends State<_StatusViewer> {
   void initState() {
     super.initState();
     _statuses = List.of(widget.statuses);
-    widget.firestoreService.markStatusViewed(_statuses[0].id, widget.myUid);
+    _markViewed(0);
+  }
+
+  void _markViewed(int i) {
+    if (widget.isOwn) return;
+    final viewedBy = (_statuses[i].data()['viewedBy'] as List?) ?? const [];
+    if (viewedBy.contains(widget.myUid)) return;
+    widget.firestoreService.markStatusViewed(_statuses[i].id, widget.myUid);
+  }
+
+  void _showViewers() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.card))),
+      builder: (_) => _ViewersSheet(statusId: _statuses[_index].id, ownerUid: widget.myUid, firestoreService: widget.firestoreService),
+    );
   }
 
   void _next() {
@@ -355,7 +376,7 @@ class _StatusViewerState extends State<_StatusViewer> {
               itemCount: _statuses.length,
               onPageChanged: (i) {
                 setState(() => _index = i);
-                widget.firestoreService.markStatusViewed(_statuses[i].id, widget.myUid);
+                _markViewed(i);
               },
               itemBuilder: (context, i) {
                 final data = _statuses[i].data();
@@ -408,8 +429,47 @@ class _StatusViewerState extends State<_StatusViewer> {
             Positioned(
               top: 20,
               left: 12,
-              child: Text(widget.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(widget.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15)),
+                  Builder(builder: (_) {
+                    final postedAt = TimeFormat.fromTs(_statuses[_index].data()['createdAt']);
+                    if (postedAt == null) return const SizedBox.shrink();
+                    return Text(TimeFormat.dayAndClock(postedAt), style: const TextStyle(color: Colors.white70, fontSize: 11.5));
+                  }),
+                ],
+              ),
             ),
+            if (widget.isOwn)
+              Positioned(
+                bottom: 16,
+                left: 0,
+                right: 0,
+                child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                  stream: widget.firestoreService.statusStream(_statuses[_index].id),
+                  builder: (context, snap) {
+                    final viewedBy = List<String>.from(snap.data?.data()?['viewedBy'] ?? [])..remove(widget.myUid);
+                    return GestureDetector(
+                      onTap: _showViewers,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white70),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.remove_red_eye_outlined, color: Colors.white, size: 18),
+                              const SizedBox(width: 6),
+                              Text('${viewedBy.length}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
             Positioned(
               top: 16,
               right: 8,
@@ -421,6 +481,77 @@ class _StatusViewerState extends State<_StatusViewer> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "Viewed by" list for one of your own statuses, updating live.
+class _ViewersSheet extends StatelessWidget {
+  final String statusId;
+  final String ownerUid;
+  final FirestoreService firestoreService;
+  const _ViewersSheet({required this.statusId, required this.ownerUid, required this.firestoreService});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
+        child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+          stream: firestoreService.statusStream(statusId),
+          builder: (context, snap) {
+            final data = snap.data?.data() ?? {};
+            final viewedAt = (data['viewedAt'] as Map?) ?? {};
+            final viewers = List<String>.from(data['viewedBy'] ?? [])..remove(ownerUid);
+            // Most recent viewers first; people with no recorded time go last.
+            viewers.sort((a, b) {
+              final ta = viewedAt[a] is Timestamp ? (viewedAt[a] as Timestamp).millisecondsSinceEpoch : 0;
+              final tb = viewedAt[b] is Timestamp ? (viewedAt[b] as Timestamp).millisecondsSinceEpoch : 0;
+              return tb.compareTo(ta);
+            });
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.remove_red_eye_outlined, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Text('Viewed by ${viewers.length}', style: Theme.of(context).textTheme.titleMedium),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                if (viewers.isEmpty)
+                  const Padding(padding: EdgeInsets.all(AppSpacing.lg), child: Text('No views yet'))
+                else
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: viewers.length,
+                      itemBuilder: (context, i) {
+                        final uid = viewers[i];
+                        final at = TimeFormat.fromTs(viewedAt[uid]);
+                        return FutureBuilder<AppUser?>(
+                          future: firestoreService.getUser(uid),
+                          builder: (context, userSnap) {
+                            final user = userSnap.data;
+                            return ListTile(
+                              leading: UserAvatar(label: user?.username ?? '?', photoUrl: user?.photoUrl, size: 40),
+                              title: Text(user?.username ?? 'Loading...'),
+                              subtitle: at == null ? null : Text(TimeFormat.dayAndClock(at)),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );
