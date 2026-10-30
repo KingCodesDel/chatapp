@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
+import '../utils/time_format.dart';
 
 final _urlPattern = RegExp(r'(https?:\/\/[^\s]+)');
 
@@ -15,6 +16,8 @@ class MessageBubble extends StatelessWidget {
   final bool edited;
   final bool deleted;
   final String? senderName;
+  final DateTime? time; // when the message was sent (null = just now)
+  final bool forwarded;
   final VoidCallback? onLongPress;
   final VoidCallback? onImageTap;
 
@@ -53,6 +56,8 @@ class MessageBubble extends StatelessWidget {
     this.edited = false,
     this.deleted = false,
     this.senderName,
+    this.time,
+    this.forwarded = false,
     this.onLongPress,
     this.onImageTap,
     this.replyToText,
@@ -124,10 +129,11 @@ class MessageBubble extends StatelessWidget {
                     if (deleted)
                       _deletedContent(isMe)
                     else ...[
+                      if (forwarded) _forwardedLabel(),
                       if (replyToText != null) _replyPreview(isMe, textPrimary),
                       _content(context, isMe, textPrimary),
                     ],
-                    if (isMe && !deleted) _statusTick(showMediaBg),
+                    if (!deleted) _footer(),
                   ],
                 ),
               ),
@@ -316,13 +322,37 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _statusTick(bool showMediaBg) {
+  Widget _forwardedLabel() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.forward_rounded, size: 13, color: AppColors.textSecondary),
+          const SizedBox(width: 4),
+          Text('Forwarded', style: TextStyle(fontSize: 11.5, fontStyle: FontStyle.italic, color: AppColors.textSecondary)),
+        ],
+      ),
+    );
+  }
+
+  /// Time sent, plus the sent/read tick on your own messages.
+  Widget _footer() {
     return Padding(
       padding: const EdgeInsets.only(right: 10, bottom: 4, left: 10),
-      child: Icon(
-        status == 'read' ? Icons.done_all_rounded : Icons.done_rounded,
-        size: 14,
-        color: status == 'read' ? AppColors.primary : AppColors.textSecondary,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(TimeFormat.clock(time ?? DateTime.now()), style: TextStyle(fontSize: 10.5, color: AppColors.textSecondary)),
+          if (isMe) ...[
+            const SizedBox(width: 4),
+            Icon(
+              status == 'read' ? Icons.done_all_rounded : Icons.done_rounded,
+              size: 14,
+              color: status == 'read' ? AppColors.primary : AppColors.textSecondary,
+            ),
+          ],
+        ],
       ),
     );
   }
