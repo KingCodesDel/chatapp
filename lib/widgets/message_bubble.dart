@@ -4,6 +4,8 @@ import 'package:just_audio/just_audio.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 import '../utils/time_format.dart';
+import '../utils/media_utils.dart';
+import 'video_widgets.dart';
 
 final _urlPattern = RegExp(r'(https?:\/\/[^\s]+)');
 
@@ -12,6 +14,7 @@ class MessageBubble extends StatelessWidget {
   final bool isMe;
   final String type; // 'text' | 'image' | 'voice' | 'file' | 'poll'
   final String? imageUrl;
+  final String? videoUrl;
   final String status;
   final bool edited;
   final bool deleted;
@@ -52,6 +55,7 @@ class MessageBubble extends StatelessWidget {
     required this.isMe,
     this.type = 'text',
     this.imageUrl,
+    this.videoUrl,
     this.status = 'sent',
     this.edited = false,
     this.deleted = false,
@@ -77,7 +81,7 @@ class MessageBubble extends StatelessWidget {
     this.onVote,
   });
 
-  bool get _isMedia => type == 'image';
+  bool get _isMedia => type == 'image' || type == 'video';
 
   @override
   Widget build(BuildContext context) {
@@ -196,6 +200,29 @@ class MessageBubble extends StatelessWidget {
               return const SizedBox(height: 160, width: 160, child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)));
             },
             errorBuilder: (context, error, stackTrace) => const SizedBox(height: 120, width: 160, child: Icon(Icons.broken_image_outlined)),
+          ),
+        );
+      case 'video':
+        return GestureDetector(
+          onTap: videoUrl == null ? null : () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => VideoPlayerScreen(url: videoUrl!))),
+          child: SizedBox(
+            width: 230,
+            height: 160,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Container(color: Colors.black87),
+                if (videoUrl != null)
+                  Image.network(videoThumbUrl(videoUrl!), fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => const SizedBox.shrink()),
+                Center(
+                  child: Container(
+                    decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                    padding: const EdgeInsets.all(10),
+                    child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 34),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       case 'voice':
