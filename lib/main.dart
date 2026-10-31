@@ -9,9 +9,7 @@ import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
 import 'services/presence_service.dart';
 import 'services/theme_controller.dart';
-import 'services/activity_listener_service.dart';
 import 'theme/app_theme.dart';
-import 'widgets/in_app_notification_overlay.dart';
 
 // Push notifications need the Blaze plan (see README) — once you upgrade,
 // uncomment the NotificationService import/calls marked below to turn them on.
@@ -50,9 +48,7 @@ class MyApp extends StatelessWidget {
                 }
                 if (snapshot.hasData) {
                   // NotificationService().init(snapshot.data!.uid); // uncomment once on Blaze
-                  return InAppNotificationOverlay(
-                    child: _PresenceGate(uid: snapshot.data!.uid, child: const HomeScreen()),
-                  );
+                  return _PresenceGate(uid: snapshot.data!.uid, child: const HomeScreen());
                 }
                 return const LoginScreen();
               },
@@ -120,21 +116,17 @@ class _PresenceGate extends StatefulWidget {
 
 class _PresenceGateState extends State<_PresenceGate> {
   late final PresenceService _presence;
-  late final ActivityListenerService _activity;
 
   @override
   void initState() {
     super.initState();
     _presence = PresenceService(FirestoreService());
     _presence.start(widget.uid);
-    _activity = ActivityListenerService(widget.uid);
-    _activity.start();
   }
 
   @override
   void dispose() {
     _presence.stop();
-    _activity.stop();
     super.dispose();
   }
 
