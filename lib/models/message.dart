@@ -4,8 +4,9 @@ class Message {
   final String id;
   final String senderId;
   final String text;
-  final String type; // 'text' | 'image' | 'voice' | 'file' | 'poll'
+  final String type; // 'text' | 'image' | 'video' | 'voice' | 'file' | 'poll'
   final String? imageUrl;
+  final String? videoUrl;
   final String status; // 'sent' or 'read'
   final Timestamp timestamp;
   final bool edited;
@@ -35,6 +36,7 @@ class Message {
     required this.text,
     this.type = 'text',
     this.imageUrl,
+    this.videoUrl,
     this.status = 'sent',
     required this.timestamp,
     this.edited = false,
@@ -63,6 +65,7 @@ class Message {
       text: map['text'] ?? '',
       type: map['type'] ?? 'text',
       imageUrl: map['imageUrl'],
+      videoUrl: map['videoUrl'],
       status: map['status'] ?? 'sent',
       timestamp: map['timestamp'] ?? Timestamp.now(),
       edited: map['edited'] == true,
@@ -93,6 +96,7 @@ class Message {
       'text': text,
       'type': type,
       'imageUrl': imageUrl,
+      if (videoUrl != null) 'videoUrl': videoUrl,
       'status': status,
       'timestamp': FieldValue.serverTimestamp(),
       'edited': edited,
