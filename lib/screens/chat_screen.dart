@@ -162,6 +162,27 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  Future<void> _sendVideo() async {
+    if (_chatId == null) return;
+    final picked = await _picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(minutes: 3));
+    if (picked == null) return;
+    final file = File(picked.path);
+    final sizeMb = (await file.length()) / (1024 * 1024);
+    if (sizeMb > 60) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Video is ${sizeMb.toStringAsFixed(0)} MB - please choose one under 60 MB')));
+      return;
+    }
+    setState(() => _uploadingImage = true);
+    try {
+      final url = await _storageService.uploadChatVideo(_chatId!, file);
+      await _firestoreService.sendMessage(chatId: _chatId!, senderId: _authService.currentUser!.uid, text: '', type: 'video', videoUrl: url);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not send video: $e')));
+    } finally {
+      if (mounted) setState(() => _uploadingImage = false);
+    }
+  }
+
   Future<void> _sendFile() async {
     if (_chatId == null) return;
     final result = await FilePicker.platform.pickFiles();
@@ -287,6 +308,14 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.videocam_outlined, color: AppColors.primary),
+              title: const Text('Video'),
+              onTap: () {
+                Navigator.pop(context);
+                _sendVideo();
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.attach_file_rounded, color: AppColors.primary),
               title: const Text('File'),
               onTap: () {
@@ -328,6 +357,7 @@ class _ChatScreenState extends State<ChatScreen> {
           text: data['text'] ?? '',
           type: type,
           imageUrl: data['imageUrl'],
+          videoUrl: data['videoUrl'],
           audioUrl: data['audioUrl'],
           audioSeconds: data['audioSeconds'],
           fileUrl: data['fileUrl'],
@@ -657,6 +687,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   isMe: isMe,
                                   type: type,
                                   imageUrl: data['imageUrl'],
+                                  videoUrl: data['videoUrl'],
                                   status: data['status'] ?? 'sent',
                                   edited: data['edited'] == true,
                                   deleted: deleted,

@@ -9,6 +9,9 @@ import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/time_format.dart';
 import 'channel_screen.dart';
+import 'discover_screen.dart';
+import 'status_compose_screen.dart';
+import '../widgets/video_widgets.dart';
 import '../widgets/user_avatar.dart';
 
 const _statusColors = [
@@ -51,6 +54,11 @@ class StatusScreenState extends State<StatusScreen> {
               onTap: () => Navigator.pop(context, 'photo'),
             ),
             ListTile(
+              leading: const Icon(Icons.videocam_outlined, color: AppColors.primary),
+              title: const Text('Video status'),
+              onTap: () => Navigator.pop(context, 'video'),
+            ),
+            ListTile(
               leading: const Icon(Icons.text_fields_rounded, color: AppColors.primary),
               title: const Text('Text status'),
               onTap: () => Navigator.pop(context, 'text'),
@@ -61,20 +69,53 @@ class StatusScreenState extends State<StatusScreen> {
       ),
     );
     if (choice == 'photo') await _postPhotoStatus();
+    if (choice == 'video') await _postVideoStatus();
     if (choice == 'text') await _postTextStatus();
   }
 
   Future<void> _postPhotoStatus() async {
     final picked = await _picker.pickImage(source: ImageSource.gallery, maxWidth: 1200, imageQuality: 85);
-    if (picked == null) return;
+    if (picked == null || !mounted) return;
+    final file = File(picked.path);
+    final caption = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => StatusComposeScreen(file: file, isVideo: false), fullscreenDialog: true),
+    );
+    if (caption == null) return;
     setState(() => _posting = true);
     try {
       final uid = _authService.currentUser!.uid;
-      final url = await _storageService.uploadStatusImage(uid, File(picked.path));
-      await _firestoreService.postStatus(uid: uid, type: 'image', mediaUrl: url);
+      final url = await _storageService.uploadStatusImage(uid, file);
+      await _firestoreService.postStatus(uid: uid, type: 'image', mediaUrl: url, caption: caption);
       if (mounted) setState(() {});
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not post status: $e')));
+    } finally {
+      if (mounted) setState(() => _posting = false);
+    }
+  }
+
+  Future<void> _postVideoStatus() async {
+    final picked = await _picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(seconds: 60));
+    if (picked == null || !mounted) return;
+    final file = File(picked.path);
+    final sizeMb = (await file.length()) / (1024 * 1024);
+    if (sizeMb > 60) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Video is ${sizeMb.toStringAsFixed(0)} MB - please choose one under 60 MB')));
+      return;
+    }
+    if (!mounted) return;
+    final caption = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => StatusComposeScreen(file: file, isVideo: true), fullscreenDialog: true),
+    );
+    if (caption == null) return;
+    setState(() => _posting = true);
+    try {
+      final uid = _authService.currentUser!.uid;
+      final url = await _storageService.uploadStatusVideo(uid, file);
+      await _firestoreService.postStatus(uid: uid, type: 'video', mediaUrl: url, caption: caption);
+      if (mounted) setState(() {});
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not post video: $e')));
     } finally {
       if (mounted) setState(() => _posting = false);
     }
@@ -127,6 +168,7 @@ class StatusScreenState extends State<StatusScreen> {
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 children: [
                   const ChannelTile(),
+                  const DiscoverTiles(),
                   const Divider(height: 1),
                   ListTile(
                     leading: Stack(
@@ -325,6 +367,21 @@ class _StatusViewerState extends State<_StatusViewer> {
     );
   }
 
+  void _showComments(String statusId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.card))),
+      builder: (_) => _CommentsSheet(
+        statusId: statusId,
+        myUid: widget.myUid,
+        isStatusOwner: widget.isOwn,
+        firestoreService: widget.firestoreService,
+      ),
+    );
+  }
+
   void _next() {
     if (_index < _statuses.length - 1) {
       _controller.nextPage(duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
@@ -401,10 +458,33 @@ class _StatusViewerState extends State<_StatusViewer> {
                             style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w600),
                           ),
                         )
-                      : Center(
-                          child: data['mediaUrl'] != null
-                              ? Image.network(data['mediaUrl'], fit: BoxFit.contain)
-                              : const Icon(Icons.image_not_supported, color: Colors.white54, size: 48),
+                      : Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            if (data['mediaUrl'] == null)
+                              const Center(child: Icon(Icons.image_not_supported, color: Colors.white54, size: 48))
+                            else if (type == 'video')
+                              StatusVideo(key: ValueKey(_statuses[i].id), url: data['mediaUrl'], onEnded: () { if (i == _index) _next(); })
+                            else
+                              Center(child: Image.network(data['mediaUrl'], fit: BoxFit.contain)),
+                            if (((data['caption'] as String?) ?? '').isNotEmpty)
+                              Positioned(
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 78),
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.transparent, Colors.black87]),
+                                  ),
+                                  child: Text(
+                                    data['caption'] as String,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.3),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                 );
               },
@@ -441,35 +521,55 @@ class _StatusViewerState extends State<_StatusViewer> {
                 ],
               ),
             ),
-            if (widget.isOwn)
-              Positioned(
-                bottom: 16,
-                left: 0,
-                right: 0,
-                child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                  stream: widget.firestoreService.statusStream(_statuses[_index].id),
-                  builder: (context, snap) {
-                    final viewedBy = List<String>.from(snap.data?.data()?['viewedBy'] ?? [])..remove(widget.myUid);
+            Positioned(
+              bottom: 12,
+              left: 0,
+              right: 0,
+              child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                stream: widget.firestoreService.statusStream(_statuses[_index].id),
+                builder: (context, snap) {
+                  final d = snap.data?.data() ?? {};
+                  final viewedBy = List<String>.from(d['viewedBy'] ?? [])..remove(widget.myUid);
+                  final likedBy = List<String>.from(d['likedBy'] ?? []);
+                  final liked = likedBy.contains(widget.myUid);
+                  final comments = (d['commentCount'] as int?) ?? 0;
+                  final statusId = _statuses[_index].id;
+                  Widget action(IconData icon, String label, VoidCallback? onTap, {Color color = Colors.white}) {
                     return GestureDetector(
-                      onTap: _showViewers,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white70),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.remove_red_eye_outlined, color: Colors.white, size: 18),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: onTap,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(icon, color: color, size: 24),
+                            if (label.isNotEmpty) ...[
                               const SizedBox(width: 6),
-                              Text('${viewedBy.length}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                              Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                             ],
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     );
-                  },
-                ),
+                  }
+
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (widget.isOwn) action(Icons.remove_red_eye_outlined, '${viewedBy.length}', _showViewers),
+                      action(
+                        liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                        likedBy.isEmpty ? '' : '${likedBy.length}',
+                        () => widget.firestoreService.setStatusLike(statusId, widget.myUid, !liked),
+                        color: liked ? AppColors.accent : Colors.white,
+                      ),
+                      action(Icons.chat_bubble_outline_rounded, comments == 0 ? '' : '$comments', () => _showComments(statusId)),
+                    ],
+                  );
+                },
               ),
+            ),
             Positioned(
               top: 16,
               right: 8,
@@ -552,6 +652,125 @@ class _ViewersSheet extends StatelessWidget {
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+/// Comments on a status. Anyone who can see the status can comment;
+/// you can delete your own comments, and the status owner can delete any.
+class _CommentsSheet extends StatefulWidget {
+  final String statusId;
+  final String myUid;
+  final bool isStatusOwner;
+  final FirestoreService firestoreService;
+  const _CommentsSheet({required this.statusId, required this.myUid, required this.isStatusOwner, required this.firestoreService});
+
+  @override
+  State<_CommentsSheet> createState() => _CommentsSheetState();
+}
+
+class _CommentsSheetState extends State<_CommentsSheet> {
+  final _ctrl = TextEditingController();
+  final _users = <String, AppUser?>{};
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadUser(String uid) async {
+    if (_users.containsKey(uid)) return;
+    _users[uid] = null;
+    final u = await widget.firestoreService.getUser(uid);
+    if (mounted) setState(() => _users[uid] = u);
+  }
+
+  Future<void> _send() async {
+    final text = _ctrl.text;
+    if (text.trim().isEmpty || _sending) return;
+    _ctrl.clear();
+    setState(() => _sending = true);
+    try {
+      await widget.firestoreService.addStatusComment(widget.statusId, widget.myUid, text);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not comment: $e')));
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final height = MediaQuery.of(context).size.height;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SafeArea(
+        child: SizedBox(
+          height: height * 0.6,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Row(
+                  children: [
+                    const Icon(Icons.chat_bubble_outline_rounded, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Text('Comments', style: Theme.of(context).textTheme.titleMedium),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: widget.firestoreService.statusCommentsStream(widget.statusId),
+                  builder: (context, snap) {
+                    if (!snap.hasData) return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                    final docs = snap.data!.docs;
+                    if (docs.isEmpty) return const Center(child: Text('No comments yet - be the first'));
+                    return ListView.builder(
+                      itemCount: docs.length,
+                      itemBuilder: (context, i) {
+                        final c = docs[i].data();
+                        final uid = c['uid'] as String? ?? '';
+                        _loadUser(uid);
+                        final user = _users[uid];
+                        final at = TimeFormat.fromTs(c['createdAt']);
+                        final canDelete = uid == widget.myUid || widget.isStatusOwner;
+                        return ListTile(
+                          leading: UserAvatar(label: user?.username ?? '?', photoUrl: user?.photoUrl, size: 36),
+                          title: Text(user?.username ?? '...', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                          subtitle: Text('${c['text'] ?? ''}${at == null ? '' : '\n${TimeFormat.dayAndClock(at)}'}'),
+                          isThreeLine: at != null,
+                          onLongPress: canDelete ? () => widget.firestoreService.deleteStatusComment(widget.statusId, docs[i].id) : null,
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _ctrl,
+                        minLines: 1,
+                        maxLines: 3,
+                        maxLength: 500,
+                        decoration: const InputDecoration(hintText: 'Add a comment...', counterText: ''),
+                      ),
+                    ),
+                    IconButton(icon: const Icon(Icons.send_rounded, color: AppColors.primary), onPressed: _sending ? null : _send),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

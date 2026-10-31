@@ -1,21 +1,17 @@
-import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/channel_service.dart';
-import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
-import '../utils/time_format.dart';
 import '../widgets/app_backdrop.dart';
-import '../widgets/date_chip.dart';
-import 'image_viewer_screen.dart';
+import '../widgets/broadcast_feed.dart';
+import '../widgets/user_avatar.dart';
 
 const _lastSeenKey = 'channel_last_seen_ms';
 
-/// Row shown at the top of the Updates tab. Shows the latest announcement and
-/// a "New" badge when there is something you haven't opened yet.
+/// Row shown at the top of the Updates tab for the official "ChatVibe Updates"
+/// channel, with a "New" badge when there is something you haven't opened yet.
 class ChannelTile extends StatefulWidget {
   const ChannelTile({super.key});
 
@@ -55,11 +51,7 @@ class _ChannelTileState extends State<ChannelTile> {
         final unread = lastPostMs > _lastSeenMs;
         final preview = (data?['lastPostText'] as String?) ?? 'Official news and announcements';
         return ListTile(
-          leading: const CircleAvatar(
-            radius: 26,
-            backgroundColor: AppColors.primary,
-            child: Icon(Icons.campaign_rounded, color: Colors.white),
-          ),
+          leading: const CircleAvatar(radius: 26, backgroundColor: AppColors.primary, child: Icon(Icons.campaign_rounded, color: Colors.white)),
           title: Text('ChatVibe Updates', style: textTheme.titleMedium),
           subtitle: Text(preview, maxLines: 1, overflow: TextOverflow.ellipsis),
           trailing: unread
@@ -76,9 +68,10 @@ class _ChannelTileState extends State<ChannelTile> {
   }
 }
 
-/// Public broadcast channel. Everyone reads; admins get a compose bar.
+/// A channel feed: the official one (default) or any user-created channel.
 class ChannelScreen extends StatefulWidget {
-  const ChannelScreen({super.key});
+  final String channelId;
+  const ChannelScreen({super.key, this.channelId = ChannelService.officialId});
 
   @override
   State<ChannelScreen> createState() => _ChannelScreenState();
@@ -86,21 +79,21 @@ class ChannelScreen extends StatefulWidget {
 
 class _ChannelScreenState extends State<ChannelScreen> {
   final _service = ChannelService();
-  final _storage = StorageService();
-  final _picker = ImagePicker();
-  final _textCtrl = TextEditingController();
   late final String _myUid = AuthService().currentUser!.uid;
-  bool _isAdmin = false;
-  bool _sending = false;
-  int _limit = 50;
+  late final _channelStream = _service.channelStream(widget.channelId);
+  bool _officialAdmin = false;
+
+  bool get _isOfficial => widget.channelId == ChannelService.officialId;
 
   @override
   void initState() {
     super.initState();
-    _service.isAdmin(_myUid).then((v) {
-      if (mounted) setState(() => _isAdmin = v);
-    });
-    _markSeen();
+    if (_isOfficial) {
+      _service.isAppAdmin(_myUid).then((v) {
+        if (mounted) setState(() => _officialAdmin = v);
+      });
+      _markSeen();
+    }
   }
 
   Future<void> _markSeen() async {
@@ -110,188 +103,109 @@ class _ChannelScreenState extends State<ChannelScreen> {
 
   @override
   void dispose() {
-    _markSeen();
-    _textCtrl.dispose();
+    if (_isOfficial) _markSeen();
     super.dispose();
   }
 
-  Future<void> _sendText() async {
-    final text = _textCtrl.text;
-    if (text.trim().isEmpty || _sending) return;
-    _textCtrl.clear();
-    setState(() => _sending = true);
-    try {
-      await _service.post(authorId: _myUid, text: text);
-    } catch (e) {
-      _toast('Could not post: $e');
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
-  }
-
-  Future<void> _sendPhoto() async {
-    final picked = await _picker.pickImage(source: ImageSource.gallery, maxWidth: 1400, imageQuality: 85);
-    if (picked == null) return;
-    setState(() => _sending = true);
-    try {
-      final url = await _storage.uploadChannelImage(File(picked.path));
-      await _service.post(authorId: _myUid, text: _textCtrl.text, imageUrl: url);
-      _textCtrl.clear();
-    } catch (e) {
-      _toast('Could not post photo: $e');
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
-  }
-
-  void _toast(String msg) {
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-  }
-
-  Future<void> _confirmDelete(String postId) async {
+  Future<void> _deleteChannel() async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.card)),
-        title: const Text('Delete this update?'),
+        title: const Text('Delete this channel?'),
+        content: const Text('All followers will lose access. This can\'t be undone.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
           TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('DELETE')),
         ],
       ),
     );
-    if (ok == true) await _service.deletePost(postId);
+    if (ok != true) return;
+    await _service.deleteChannel(widget.channelId);
+    if (mounted) Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final textTheme = Theme.of(context).textTheme;
-    return AppBackdrop(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('ChatVibe Updates', style: textTheme.titleLarge),
-              Text('Official announcements', style: textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
-            ],
-          ),
-        ),
-        body: Column(
-          children: [
-            Expanded(
-              child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: _service.postsStream(limit: _limit),
-                builder: (context, snap) {
-                  if (snap.hasError) {
-                    return Center(child: Padding(padding: const EdgeInsets.all(AppSpacing.lg), child: Text('Could not load updates:\n${snap.error}', textAlign: TextAlign.center)));
-                  }
-                  if (!snap.hasData) return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-                  final posts = snap.data!.docs;
-                  if (posts.isEmpty) {
-                    return Center(child: Text('No updates yet', style: textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary)));
-                  }
-                  final canLoadMore = posts.length >= _limit;
-                  return ListView.builder(
-                    reverse: true,
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                    itemCount: posts.length + (canLoadMore ? 1 : 0),
-                    itemBuilder: (context, i) {
-                      if (i == posts.length) {
-                        return Center(child: TextButton(onPressed: () => setState(() => _limit += 50), child: const Text('Load earlier updates')));
-                      }
-                      final doc = posts[i];
-                      final data = doc.data();
-                      final at = TimeFormat.fromTs(data['createdAt']) ?? DateTime.now();
-                      final older = i + 1 < posts.length ? TimeFormat.fromTs(posts[i + 1].data()['createdAt']) : null;
-                      final showDate = i + 1 < posts.length ? (older != null && !TimeFormat.sameDay(older, at)) : !canLoadMore;
-                      final imageUrl = data['imageUrl'] as String?;
-                      final text = (data['text'] as String?) ?? '';
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _channelStream,
+      builder: (context, snap) {
+        final data = snap.data?.data();
+        final deleted = snap.hasData && !snap.data!.exists && !_isOfficial;
+        final name = _isOfficial ? 'ChatVibe Updates' : (data?['name'] as String? ?? 'Channel');
+        final followers = List<String>.from(data?['followers'] ?? []);
+        final count = (data?['followerCount'] as int?) ?? followers.length;
+        final isOwner = data?['ownerId'] == _myUid;
+        final following = followers.contains(_myUid);
+        final canPost = _isOfficial ? _officialAdmin : isOwner;
 
-                      final card = GestureDetector(
-                        onLongPress: _isAdmin ? () => _confirmDelete(doc.id) : null,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isDark ? AppColors.bubbleReceivedDark : AppColors.bubbleReceived,
-                            borderRadius: BorderRadius.circular(AppRadius.bubble),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (imageUrl != null)
-                                GestureDetector(
-                                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ImageViewerScreen(imageUrls: [imageUrl], initialIndex: 0))),
-                                  child: Image.network(imageUrl, width: double.infinity, fit: BoxFit.cover),
-                                ),
-                              if (text.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
-                                  child: Text(text, style: textTheme.bodyLarge?.copyWith(height: 1.35)),
-                                ),
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(14, 6, 14, 8),
-                                child: Align(
-                                  alignment: Alignment.centerRight,
-                                  child: Text(TimeFormat.clock(at), style: TextStyle(fontSize: 10.5, color: AppColors.textSecondary)),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                      if (!showDate) return card;
-                      return Column(mainAxisSize: MainAxisSize.min, children: [DateChip(label: TimeFormat.dayLabel(at)), card]);
-                    },
-                  );
-                },
+        return AppBackdrop(
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
+              title: Row(
+                children: [
+                  if (_isOfficial)
+                    const CircleAvatar(radius: 18, backgroundColor: AppColors.primary, child: Icon(Icons.campaign_rounded, color: Colors.white, size: 20))
+                  else
+                    UserAvatar(label: name, photoUrl: data?['photoUrl'] as String?, size: 36),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: textTheme.titleMedium),
+                        Text(_isOfficial ? 'Official announcements' : '$count follower${count == 1 ? '' : 's'}',
+                            style: textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
+              actions: [
+                if (!_isOfficial && data != null && !isOwner)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: TextButton(
+                      onPressed: () => following ? _service.unfollow(widget.channelId, _myUid) : _service.follow(widget.channelId, _myUid),
+                      child: Text(following ? 'Following' : 'Follow'),
+                    ),
+                  ),
+                if (isOwner && !_isOfficial)
+                  PopupMenuButton<String>(
+                    onSelected: (v) {
+                      if (v == 'delete') _deleteChannel();
+                    },
+                    itemBuilder: (_) => const [PopupMenuItem(value: 'delete', child: Text('Delete channel'))],
+                  ),
+              ],
             ),
-            if (_isAdmin)
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  child: Row(
+            body: deleted
+                ? const Center(child: Text('This channel no longer exists'))
+                : Column(
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.image_outlined, color: AppColors.primary),
-                        onPressed: _sending ? null : _sendPhoto,
-                      ),
-                      Expanded(
-                        child: TextField(
-                          controller: _textCtrl,
-                          minLines: 1,
-                          maxLines: 5,
-                          decoration: const InputDecoration(hintText: 'Post an update...'),
+                      if (!_isOfficial && ((data?['description'] as String?) ?? '').isNotEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.xs, AppSpacing.md, AppSpacing.sm),
+                          child: Text(data!['description'] as String, style: textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      Container(
-                        decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.primary),
-                        child: IconButton(
-                          icon: _sending
-                              ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.arrow_upward_rounded, color: Colors.white),
-                          onPressed: _sending ? null : _sendText,
+                      Expanded(
+                        child: BroadcastFeed(
+                          key: ValueKey('${widget.channelId}-$canPost'),
+                          postsStream: (limit) => _service.postsStream(widget.channelId, limit: limit),
+                          canPost: canPost,
+                          emptyText: 'No updates yet',
+                          readOnlyHint: _isOfficial ? 'Only admins can post here' : 'Only the channel owner can post',
+                          onPost: (text, imageUrl) => _service.post(widget.channelId, authorId: _myUid, text: text, imageUrl: imageUrl),
+                          onDelete: (postId) => _service.deletePost(widget.channelId, postId),
                         ),
                       ),
                     ],
                   ),
-                ),
-              )
-            else
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  child: Text('Only admins can post here', style: textTheme.bodySmall?.copyWith(color: AppColors.textSecondary)),
-                ),
-              ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
