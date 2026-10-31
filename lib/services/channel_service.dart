@@ -1,25 +1,41 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// The public "ChatVibe Updates" channel: everyone can read, only admins can post.
+/// Channels: one-way broadcast feeds. Anyone can create one, anyone can follow
+/// it, only the owner posts.
 ///
-/// Admins are the uids listed in the Firestore document `config/app`
-/// (field `admins`, an array of strings). You add yourself there once from the
-/// Firebase console - see SETUP_NOTES.md. Because that document can't be
-/// written from the app, nobody can make themselves an admin.
+/// There is also one official channel, "ChatVibe Updates" (id [officialId]),
+/// that every user sees. Its posters are the uids listed in Firestore doc
+/// `config/app` -> field `admins` (see SETUP_NOTES.md).
 class ChannelService {
-  static const channelId = 'app_updates';
+  static const officialId = 'app_updates';
   final _db = FirebaseFirestore.instance;
 
-  DocumentReference<Map<String, dynamic>> get _channel => _db.collection('channels').doc(channelId);
-  CollectionReference<Map<String, dynamic>> get _posts => _channel.collection('posts');
+  CollectionReference<Map<String, dynamic>> get _channels => _db.collection('channels');
+  DocumentReference<Map<String, dynamic>> _channel(String id) => _channels.doc(id);
+  CollectionReference<Map<String, dynamic>> _posts(String id) => _channel(id).collection('posts');
 
-  Stream<DocumentSnapshot<Map<String, dynamic>>> channelStream() => _channel.snapshots();
+  // ----- reading -----
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> postsStream({int limit = 50}) {
-    return _posts.orderBy('createdAt', descending: true).limit(limit).snapshots();
+  Stream<DocumentSnapshot<Map<String, dynamic>>> channelStream([String id = officialId]) => _channel(id).snapshots();
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> postsStream(String id, {int limit = 50}) {
+    return _posts(id).orderBy('createdAt', descending: true).limit(limit).snapshots();
   }
 
-  Future<bool> isAdmin(String uid) async {
+  /// Channels this user follows (newest activity first is sorted client-side
+  /// so no extra Firestore index is needed).
+  Stream<QuerySnapshot<Map<String, dynamic>>> followingStream(String uid) {
+    return _channels.where('followers', arrayContains: uid).snapshots();
+  }
+
+  /// Most-followed channels, for the Discover list.
+  Stream<QuerySnapshot<Map<String, dynamic>>> discoverStream({int limit = 50}) {
+    return _channels.orderBy('followerCount', descending: true).limit(limit).snapshots();
+  }
+
+  // ----- permissions -----
+
+  Future<bool> isAppAdmin(String uid) async {
     try {
       final doc = await _db.collection('config').doc('app').get();
       return List<String>.from(doc.data()?['admins'] ?? []).contains(uid);
@@ -28,21 +44,61 @@ class ChannelService {
     }
   }
 
-  Future<void> post({required String authorId, String text = '', String? imageUrl}) async {
+  /// Can [uid] post in this channel?
+  Future<bool> canPost(String channelId, String uid, Map<String, dynamic>? channelData) async {
+    if (channelId == officialId) return isAppAdmin(uid);
+    return channelData?['ownerId'] == uid;
+  }
+
+  // ----- creating / following -----
+
+  Future<String> create({required String ownerId, required String name, String description = '', String photoUrl = ''}) async {
+    final ref = _channels.doc();
+    await ref.set({
+      'name': name.trim(),
+      'description': description.trim(),
+      'photoUrl': photoUrl,
+      'ownerId': ownerId,
+      'followers': [ownerId],
+      'followerCount': 1,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    return ref.id;
+  }
+
+  Future<void> follow(String channelId, String uid) {
+    return _channel(channelId).update({
+      'followers': FieldValue.arrayUnion([uid]),
+      'followerCount': FieldValue.increment(1),
+    });
+  }
+
+  Future<void> unfollow(String channelId, String uid) {
+    return _channel(channelId).update({
+      'followers': FieldValue.arrayRemove([uid]),
+      'followerCount': FieldValue.increment(-1),
+    });
+  }
+
+  Future<void> deleteChannel(String channelId) => _channel(channelId).delete();
+
+  // ----- posting -----
+
+  Future<void> post(String channelId, {required String authorId, String text = '', String? imageUrl}) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty && imageUrl == null) return;
-    await _posts.add({
+    await _posts(channelId).add({
       'authorId': authorId,
       'text': trimmed,
       'imageUrl': imageUrl,
       'createdAt': FieldValue.serverTimestamp(),
     });
-    await _channel.set({
-      'name': 'ChatVibe Updates',
+    await _channel(channelId).set({
+      if (channelId == officialId) 'name': 'ChatVibe Updates',
       'lastPostAt': FieldValue.serverTimestamp(),
       'lastPostText': trimmed.isNotEmpty ? trimmed : '📷 Photo',
     }, SetOptions(merge: true));
   }
 
-  Future<void> deletePost(String postId) => _posts.doc(postId).delete();
+  Future<void> deletePost(String channelId, String postId) => _posts(channelId).doc(postId).delete();
 }

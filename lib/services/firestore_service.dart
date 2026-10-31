@@ -243,6 +243,7 @@ class FirestoreService {
     required String text,
     String type = 'text',
     String? imageUrl,
+    String? videoUrl,
     String? replyToId,
     String? replyToText,
     String? replyToSender,
@@ -256,7 +257,7 @@ class FirestoreService {
     bool forwarded = false,
   }) async {
     final trimmed = text.trim();
-    final hasContent = trimmed.isNotEmpty || imageUrl != null || audioUrl != null || fileUrl != null || pollQuestion != null;
+    final hasContent = trimmed.isNotEmpty || imageUrl != null || videoUrl != null || audioUrl != null || fileUrl != null || pollQuestion != null;
     if (!hasContent) return;
 
     final chatRef = _db.collection('chats').doc(chatId);
@@ -278,6 +279,7 @@ class FirestoreService {
 
     final previewText = switch (type) {
       'image' => '📷 Photo',
+      'video' => '🎥 Video',
       'voice' => '🎤 Voice message',
       'file' => '📎 ${fileName ?? 'File'}',
       'poll' => '📊 ${pollQuestion ?? 'Poll'}',
@@ -293,6 +295,7 @@ class FirestoreService {
         text: trimmed,
         type: type,
         imageUrl: imageUrl,
+        videoUrl: videoUrl,
         timestamp: Timestamp.now(),
         replyToId: replyToId,
         replyToText: replyToText,
@@ -474,6 +477,8 @@ class FirestoreService {
       'bgColor': bgColor,
       'createdAt': FieldValue.serverTimestamp(),
       'viewedBy': <String>[],
+      'likedBy': <String>[],
+      'commentCount': 0,
     });
   }
 
@@ -506,6 +511,40 @@ class FirestoreService {
       'viewedBy': FieldValue.arrayUnion([myUid]),
       'viewedAt.$myUid': FieldValue.serverTimestamp(),
     });
+  }
+
+  // ---------- STATUS LIKES & COMMENTS ----------
+
+  Future<void> setStatusLike(String statusId, String uid, bool liked) async {
+    await _db.collection('status_updates').doc(statusId).update({
+      'likedBy': liked ? FieldValue.arrayUnion([uid]) : FieldValue.arrayRemove([uid]),
+    });
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> statusCommentsStream(String statusId) {
+    return _db.collection('status_updates').doc(statusId).collection('comments').orderBy('createdAt').snapshots();
+  }
+
+  Future<void> addStatusComment(String statusId, String uid, String text) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return;
+    final statusRef = _db.collection('status_updates').doc(statusId);
+    final batch = _db.batch();
+    batch.set(statusRef.collection('comments').doc(), {
+      'uid': uid,
+      'text': trimmed,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    batch.update(statusRef, {'commentCount': FieldValue.increment(1)});
+    await batch.commit();
+  }
+
+  Future<void> deleteStatusComment(String statusId, String commentId) async {
+    final statusRef = _db.collection('status_updates').doc(statusId);
+    final batch = _db.batch();
+    batch.delete(statusRef.collection('comments').doc(commentId));
+    batch.update(statusRef, {'commentCount': FieldValue.increment(-1)});
+    await batch.commit();
   }
 
   Stream<DocumentSnapshot<Map<String, dynamic>>> statusStream(String statusId) {
