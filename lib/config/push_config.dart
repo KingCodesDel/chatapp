@@ -7,7 +7,3 @@ const String kPushWorkerUrl = 'https://chatvibe-push.olamideashaolu15.workers.de
 /// False until you replace the placeholder above. While false, the app simply
 /// skips push requests instead of failing.
 bool get kPushConfigured => !kPushWorkerUrl.contains('YOUR-SUBDOMAIN');
-
-/// False until you replace the placeholder above. While false, the app simply
-/// skips push requests instead of failing.
-bool get kPushConfigured => !kPushWorkerUrl.contains('YOUR-SUBDOMAIN');
