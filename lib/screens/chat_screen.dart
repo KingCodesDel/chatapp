@@ -17,6 +17,8 @@ import '../widgets/app_backdrop.dart';
 import '../widgets/glass_container.dart';
 import '../widgets/user_avatar.dart';
 import '../widgets/message_bubble.dart';
+import '../services/push_service.dart';
+import 'call_screen.dart';
 import 'contact_profile_screen.dart';
 import 'forward_picker_screen.dart';
 import 'group_info_screen.dart';
@@ -76,6 +78,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    if (PushService.activeChatId == _chatId) PushService.activeChatId = null;
     _typingTimer?.cancel();
     if (_chatId != null) {
       _firestoreService.setTyping(_chatId!, _authService.currentUser!.uid, false);
@@ -85,11 +88,24 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
+  void _startCall({required bool video}) {
+    if (_chatId == null) return;
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => CallScreen(
+        chatOrRoomId: _chatId!,
+        collectionPath: 'chats',
+        myUid: _authService.currentUser!.uid,
+        startWithVideo: video,
+      ),
+    ));
+  }
+
   Future<void> _init() async {
     final myUid = _authService.currentUser!.uid;
     try {
       final chatId = widget.isGroup ? widget.otherUid : await _firestoreService.getOrCreateChat(myUid, widget.otherUid);
       if (mounted) setState(() => _chatId = chatId);
+      PushService.activeChatId = chatId;
       if (widget.isGroup) _loadSenderNames(chatId);
       unawaited(_firestoreService.purgeExpiredMessages(chatId));
     } catch (e) {
@@ -584,6 +600,16 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
               actions: [
+                IconButton(
+                  tooltip: 'Voice call',
+                  icon: const Icon(Icons.call_rounded),
+                  onPressed: _chatId == null ? null : () => _startCall(video: false),
+                ),
+                IconButton(
+                  tooltip: 'Video call',
+                  icon: const Icon(Icons.videocam_rounded),
+                  onPressed: _chatId == null ? null : () => _startCall(video: true),
+                ),
                 if (!widget.isGroup)
                   PopupMenuButton<String>(
                     onSelected: (value) {
