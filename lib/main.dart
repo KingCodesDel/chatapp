@@ -8,6 +8,7 @@ import 'screens/splash_screen.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
 import 'services/presence_service.dart';
+import 'services/push_service.dart';
 import 'services/theme_controller.dart';
 import 'theme/app_theme.dart';
 
@@ -35,6 +36,7 @@ class MyApp extends StatelessWidget {
       builder: (context, mode, _) {
         return MaterialApp(
           title: 'ChatVibe',
+          navigatorKey: appNavigatorKey,
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
@@ -122,6 +124,7 @@ class _PresenceGateState extends State<_PresenceGate> {
     super.initState();
     _presence = PresenceService(FirestoreService());
     _presence.start(widget.uid);
+    PushService.instance.init(widget.uid); // push notifications + incoming calls
   }
 
   @override
