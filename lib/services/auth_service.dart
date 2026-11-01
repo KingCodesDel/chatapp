@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'push_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -142,6 +143,7 @@ class AuthService {
   }
 
   Future<void> signOut() async {
+    await PushService.instance.removeToken();
     await GoogleSignIn.instance.signOut();
     await _auth.signOut();
   }

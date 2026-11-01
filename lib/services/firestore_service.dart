@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/app_user.dart';
 import '../models/message.dart';
+import 'push_api.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -319,6 +320,7 @@ class FirestoreService {
       ...unreadUpdates,
     });
     await batch.commit();
+    PushApi.notifyMessage(chatId, msgRef.id); // push notification (no-op until the Worker is set up)
   }
 
   /// Paginated message stream: newest [limit] messages, descending. Call
