@@ -1,0 +1,9 @@
+# Only needed if you deploy with the command line (npx wrangler deploy).
+# If you paste index.js into the Cloudflare dashboard instead, ignore this file.
+name = "chatvibe-push"
+main = "index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+FIREBASE_PROJECT_ID = "my-chat-app-262ef"
+LIVEKIT_URL = "wss://REPLACE-ME.livekit.cloud"
